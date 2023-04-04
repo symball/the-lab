@@ -1,0 +1,23 @@
+- name: Add Hashcorp GPG key
+  become: True
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /etc/apt/keyrings/hashicorp.asc
+    mode: '0644'
+    force: true
+
+- name: Debian_terraform | Add APT repository
+  become: True
+  apt_repository:
+    repo: >-
+      deb
+      [signed-by=/etc/apt/keyrings/hashicorp.asc]
+      https://apt.releases.hashicorp.com jammy main
+    state: present
+    filename: hashicorp
+
+- name: Debian_terraform | Install
+  become: true
+  ansible.builtin.apt:
+    name: terraform
+    update_cache: yes

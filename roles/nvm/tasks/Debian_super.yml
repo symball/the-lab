@@ -1,0 +1,34 @@
+- name: Git checkout
+  become: true
+  ansible.builtin.git:
+    repo: https://github.com/nvm-sh/nvm.git
+    dest: "{{ nvm_path }}"
+    version: "{{ nvm_version }}"
+
+- name: Make sure there is an nvm group
+  become: true
+  ansible.builtin.group:
+    name: "{{ nvm_debian_group }}"
+    state: present
+
+- name: Archlinux_super | Make sure there is an http user
+  become: true
+  ansible.builtin.user:
+    name: "{{ common_user }}"
+    groups: "{{ nvm_debian_group }}"
+    append: true
+
+- name: Make nvm group own path and give group the same rights
+  become: true
+  ansible.builtin.file:
+    state: directory
+    recurse: yes
+    path: "{{ nvm_path }}"
+    group: "{{ nvm_debian_group }}"
+    mode: g=u
+
+- name: Update paths
+  become: True
+  ansible.builtin.template:
+    src: nvm_path.sh.j2
+    dest: /etc/profile.d/nvm_path.sh

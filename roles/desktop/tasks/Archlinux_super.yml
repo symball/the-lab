@@ -1,0 +1,45 @@
+---
+- name: Create config directory for SDDM
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: /etc/sddm.conf.d
+
+- name: Copy across SDDM config
+  become: true
+  ansible.builtin.copy:
+    src: sddm.conf
+    dest: /etc/sddm.conf.d/overrides.conf
+
+- name: packages | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ desktop_arch_packages }}"
+
+- name: packages | Install fonts
+  become: true
+  community.general.pacman:
+    name: "{{ desktop_arch_font_packages }}"
+
+- name: packages | Install AUR packages if helper enabled
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  when: yay_install
+  vars:
+    aur_packages: "{{ desktop_arch_aur_packages }}"
+
+- name: packages | Install Jetbrains Toolbox
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  when:
+    - yay_install
+    - desktop_use_intellij
+  vars:
+    aur_packages:
+      - jetbrains-toolbox
+
+- name: super | Install Nvidia tools
+  when:
+    - gfx_card is defined
+    - gfx_card == "nvidia"
+  become: true
+  community.general.pacman:
+    name: "{{ desktop_arch_nvidia_packages }}"

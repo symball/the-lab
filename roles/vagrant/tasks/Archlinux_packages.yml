@@ -1,0 +1,19 @@
+---
+- name: vagrant | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ arch_linux_vagrant_packages }}"
+
+- name: vagrant | Install share plugin
+  ansible.builtin.command:
+    cmd: vagrant plugin install vagrant-share
+
+- name: vagrant | Install libvirt plugin
+  when: "'libvirt' in group_names"
+  ansible.builtin.command:
+    cmd: vagrant plugin install vagrant-libvirt
+
+- name: vagrant | Install virtualbox plugin
+  when: "'virtualbox' in group_names"
+  ansible.builtin.command:
+    cmd: vagrant plugin install vagrant-vbguest

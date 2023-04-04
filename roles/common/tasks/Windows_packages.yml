@@ -1,0 +1,5 @@
+---
+- name: Windows_packages | Install common
+  win_chocolatey:
+    name: "{{ windows_common_packages }}"
+    state: present

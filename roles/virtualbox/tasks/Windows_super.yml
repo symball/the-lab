@@ -1,0 +1,5 @@
+---
+- name: vagrant | Install packages
+  win_chocolatey:
+    name: "{{ windows_chocolatey_vagrant_packages }}"
+    state: present

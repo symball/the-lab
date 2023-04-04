@@ -1,0 +1,47 @@
+- name: Render initial Nginx configuration file for letsencrypt checking
+  when: letsencrypt == True
+  become: True
+  template:
+    src: "../../../tasks/templates/lets_encrypt_part_1.conf.j2"
+    dest: "{{ common_working_path }}/nginx/{{ domain }}.conf"
+
+- name: Test the Nginx configuration
+  when: letsencrypt == True
+  become: True
+  command: nginx -t
+
+- name: Restart nginx for acme challenge pickup
+  when: letsencrypt == True
+  command: "sudo /bin/systemctl restart nginx"
+  args:
+    warn: False
+
+- name: Generate security certificate
+  import_tasks: nginx_generate_certificate.yml
+
+- name: Check if alternate nginx template being used
+  when: nginx_template_role is defined
+  become: True
+  template:
+    src: "../../{{ nginx_template_role }}/templates/nginx.conf.j2"
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    dest: "{{ common_working_path }}/nginx/{{ domain }}.conf"
+
+- name: Create the Nginx site configuration
+  when: nginx_template_role is undefined
+  become: True
+  template:
+    src: "../../../tasks/templates/static_site.conf.j2"
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    dest: "{{ common_working_path }}/nginx/{{ domain }}.conf"
+
+- name: Test the Nginx configuration
+  become: True
+  command: nginx -t
+
+- name: Restart nginx
+  command: "sudo /bin/systemctl restart nginx"
+  args:
+    warn: False

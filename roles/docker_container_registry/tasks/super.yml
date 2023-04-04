@@ -1,0 +1,46 @@
+---
+- set_fact:
+    domain: "{{ docker_container_registry_domain | default('docker.' + inventory_hostname) }}"
+
+- name: Create path to store images
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ item }}"
+  with_items:
+    - "{{ docker_container_registry_images }}"
+    - "{{ docker_container_registry_auth }}"
+
+#- name: Create self-signed certificate
+#  become: true
+#  ansible.builtin.shell: >
+#    openssl req
+#      -newkey rsa:4096 -nodes -sha256 -keyout {{ docker_container_registry_certs }}/domain.key
+#      -addext "subjectAltName = DNS:{{ domain }}"
+#      -x509 -days 365 -out {{ docker_container_registry_certs }}/domain.crt
+
+
+- name: Start the container registry service
+  community.docker.docker_container:
+    name: "{{ docker_container_registry_container_name }}"
+    image: "{{ docker_container_registry_image }}"
+    restart_policy: always
+    state: started
+    env:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/registry.password
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+    volumes:
+      - "{{ docker_container_registry_images }}:/data"
+      - "{{ docker_container_registry_auth }}:/auth"
+    ports:
+     - "{{ docker_container_registry_port }}:5000"
+
+- name: Create the reverse proxy
+  ansible.builtin.import_tasks: tasks/nginx_reverse_proxy.yml
+  vars:
+    reference: "{{ role_name }}"
+    app_port: "{{ docker_container_registry_port }}"
+    client_max_body_size: "1G"
+    letsencrypt: "{{ nginx_facade_use_certbot }}"

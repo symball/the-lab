@@ -1,0 +1,25 @@
+---
+qemu_arch_packages:
+  - bridge-utils
+  - dnsmasq
+  - dmidecode
+  - iptables-nft
+  - libvirt
+  - qemu-base
+
+qemu_arch_desktop_packages:
+  - libguestfs
+  - qemu-full
+  - virt-manager
+
+qemu_debian_22_packages:
+  - qemu-kvm
+  - libvirt-daemon-system
+  - virtinst
+  - libvirt-clients
+  - bridge-utils
+
+qemu_debian_22_desktop_packages:
+  - virt-manager
+network_bridge_interface: true
+network_bridge_name: br1

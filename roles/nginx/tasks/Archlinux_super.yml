@@ -1,0 +1,85 @@
+---
+- name: Archlinux_packages | Install common
+  become: true
+  community.general.pacman:
+    name: "{{ nginx_arch_linux_packages }}"
+
+- name: Ensure paths for config loading present
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: /etc/systemd/system/nginx.service.d
+
+- name: Archlinux_super | Write SystemD dropin for http user
+  become: true
+  ansible.builtin.template:
+    src: systemd-dropin.conf.j2
+    dest: /etc/systemd/system/nginx.service.d/user.conf
+    mode: "0600"
+
+- name: Remove pid config from SystemD
+  become: true
+  ansible.builtin.replace:
+    path: /usr/lib/systemd/system/nginx.service
+    regexp: 'pid /run/nginx.pid;'
+    replace: ''
+
+- name: Archlinux_super | Write SystemD tempfile create definition
+  become: true
+  ansible.builtin.template:
+    src: systemd-tmpfile.conf.j2
+    dest: /usr/lib/tmpfiles.d/nginx.conf
+    mode: "0600"
+
+- name: Make sure there is an http group
+  become: true
+  ansible.builtin.group:
+    name: "{{ nginx_user_group }}"
+    state: present
+- name: Archlinux_super | Make sure there is an http user
+  become: true
+  ansible.builtin.user:
+    name: "{{ nginx_user }}"
+    group: "{{ nginx_user_group }}"
+
+- name: SystemD temporary path creation
+  become: true
+  ansible.builtin.command:
+    cmd: systemd-tmpfiles --create
+
+- name: Ensure paths for config loading present
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ nginx_path }}"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user_group }}"
+  loop:
+    - /etc/nginx/modules-enabled
+    - /etc/nginx/conf.d
+    - /etc/nginx/letsencrypt
+    - /etc/nginx/sec
+    - /etc/nginx/sites-enabled
+    - /var/log/nginx
+    - /var/lib/nginx
+  loop_control:
+    loop_var: nginx_path
+
+- name: Archlinux_super | Write general config
+  become: true
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: "0600"
+
+- name: Run Nginx config test
+  become: true
+  ansible.builtin.command:
+    cmd: nginx -t
+
+- name: super | Enable Nginx
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: nginx

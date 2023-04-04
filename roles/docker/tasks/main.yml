@@ -1,0 +1,11 @@
+---
+# The file is split like this for variable merging from role
+- name: common | Super
+  when: is_super | bool
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  with_first_found:
+    - files:
+      - "{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
+      - "{{ ansible_os_family }}_super.yml"
+      skip: True

@@ -1,0 +1,3 @@
+---
+- name: vagrant | Install packages
+  ansible.builtin.import_tasks: Archlinux_packages.yml

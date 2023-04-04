@@ -1,0 +1,29 @@
+---
+- name: super | Install qemu packages
+  become: true
+  community.general.pacman:
+    name: "{{ qemu_arch_packages }}"
+    # Auto confirm replace
+    extra_args: --ask 4
+
+- name: super | Install qemu GUI
+  become: true
+  when: "'desktop' in group_names"
+  community.general.pacman:
+    name: "{{ qemu_arch_desktop_packages }}"
+    # Auto confirm replace
+    extra_args: --ask 4
+
+- name: super | Add the user to the libvity user group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_ssh_user }}"
+    groups: libvirt
+    append: true
+
+- name: super | Make sure libvirt daemon is enabled and running
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: libvirtd

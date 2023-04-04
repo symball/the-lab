@@ -1,0 +1,116 @@
+---
+- name: super | Install Home Assistant packages
+  become: true
+  community.general.pacman:
+    name: "{{ home_assistant_packages }}"
+
+- name: super | Create the backend database user
+  ansible.builtin.import_tasks: tasks/mariadb_setup_user_db.yml
+  vars:
+    user_name: "{{ home_assistant_db_user }}"
+    user_pass: "{{ home_assistant_db_pass }}"
+    schema: "{{ home_assistant_db_name }}"
+
+- name: super | Install home-assistant frontened
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  vars:
+    aur_packages:
+      - python-home-assistant-frontend
+
+- name: super | Enable Mosquitto MQTT broker
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: zigbee2mqtt
+
+- name: super | Write Zigbee2MQTT configuration
+  become: true
+  ansible.builtin.template:
+    src: zigbee2mqtt-configuration.yaml.j2
+    dest: /var/lib/zigbee2mqtt/configuration.yaml
+    owner: zigbee2mqtt
+    group: zigbee2mqtt
+    mode: "0640"
+
+- name: super | Write Zigbee2MQTT secrets
+  become: true
+  ansible.builtin.template:
+    src: zigbee2mqtt-secret.yaml.j2
+    dest: /var/lib/zigbee2mqtt/secret.yaml
+    owner: zigbee2mqtt
+    group: zigbee2mqtt
+    mode: "0640"
+
+- name: super | Copy device definition for bulbs
+  become: true
+  ansible.builtin.copy:
+    src: AD-GU10RGBW3001.js
+    dest: /var/lib/zigbee2mqtt/AD-GU10RGBW3001.js
+    owner: zigbee2mqtt
+    group: zigbee2mqtt
+    mode: "0640"
+
+- name: super | Enable Zigbee2MQTT
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: zigbee2mqtt
+
+- name: super | Create path to host the extended SystemD file
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: /etc/systemd/system/home-assistant.service.d
+    mode: "0644"
+
+- name: super | Copy across extension to the SystemD unit file
+  become: true
+  ansible.builtin.copy:
+    src: systemd-dropin.conf
+    dest: /etc/systemd/system/home-assistant.service.d/override.conf
+    mode: "0644"
+
+- name: super | Add a system user and group for Home Assistant
+  become: true
+  ansible.builtin.user:
+    name: hass
+    group: hass
+    shell: /usr/bin/nologin
+    system: true
+
+- name: super | Enable Home Assistant with a daemon-reload to pickup changes
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    enabled: true
+    state: started
+    name: home-assistant
+
+- name: super | Wait for the configuration to become available after first run
+  become: true
+  ansible.builtin.wait_for:
+    path: /var/lib/hass/configuration.yaml
+
+- name: super | Configuration block to use MariaDB instead of SQLite
+  become: true
+  ansible.builtin.blockinfile:
+    path: /var/lib/hass/configuration.yaml
+    marker: "# {mark} ANSIBLE MARIADB_RECORDER"
+    block: |
+      recorder:
+        db_url: !secret recorder_mariadb_url
+
+- name: super | MariaDB access secret
+  become: true
+  ansible.builtin.blockinfile:
+    path: /var/lib/hass/secrets.yaml
+    block: 'recorder_mariadb_url: "{{ home_assistant_db_connection_string }}"'
+    marker: "# {mark} ANSIBLE MARIADB_CREDENTIALS"
+
+- name: super | Restart Home Assistant to pickup MariaDB
+  become: true
+  ansible.builtin.systemd:
+    state: restarted
+    name: home-assistant

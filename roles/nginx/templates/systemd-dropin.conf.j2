@@ -1,0 +1,12 @@
+[Service]
+PIDFile={{ nginx_pid_file }}
+# Tell SystemD to user our http user 
+User={{ nginx_user }}
+Group={{ nginx_user_group }}
+# Harden against privilege escalation
+NoNewPrivileges=yes
+# Allow service to bind to ports below 1024
+CapabilityBoundingSet=
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=
+AmbientCapabilities=CAP_NET_BIND_SERVICE

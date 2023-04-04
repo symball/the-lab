@@ -1,0 +1,14 @@
+---
+docker_container_registry_port: 5000
+docker_container_registry_container_name: registry
+docker_container_registry_image: registry:2
+docker_container_registry_url:
+docker_container_registry_path: /var/lib/container_registry
+docker_container_registry_images: "{{ docker_container_registry_path }}/images"
+docker_container_registry_auth: "{{ docker_container_registry_path }}/auth"
+#
+# Secrets - The following are included for reference only but, 100% should be
+#           included in a Vault
+#
+docker_container_registry_user: thelab
+docker_container_registry_user_password: development

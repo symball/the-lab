@@ -1,0 +1,20 @@
+---
+- name: Set some variables as facts for use outside role
+  set_fact:
+    yay_install: "{{ yay_install }}"
+- name: Archlinux_super | Install common app loadout
+  ansible.builtin.import_tasks: Archlinux_packages.yml
+- name: Archlinux_super | Setup common user
+  when: common_user_create
+  ansible.builtin.import_tasks: linux_common_user.yml
+- name: Archlinux_super | AUR helper
+  ansible.builtin.import_tasks: Archlinux_yay.yml
+- name: Archlinux_super | Rich Shell
+  ansible.builtin.import_tasks: Archlinux_rich_shell.yml
+  when: rich_shell
+- name: Archlinux_super | Hostname
+  ansible.builtin.import_tasks: set_hostname.yml
+- name: Archlinux_super | Host aliases
+  ansible.builtin.import_tasks: set_inventory_hosts.yml
+- name: Archlinux_super | Update system packages
+  ansible.builtin.import_tasks: Archlinux_system_update.yml

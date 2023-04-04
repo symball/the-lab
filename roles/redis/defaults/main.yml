@@ -1,0 +1,21 @@
+redis_port: 6040
+redis_master_name: pledgecamp_master
+redis_run_path: /run/redis
+redis_pid_file: "{{ redis_run_path }}/redis-server.pid"
+redis_data_path: /var/lib/redis
+redis_sentinel_port: 26379
+redis_protected_mode: "yes"
+redis_pass: "development"
+# debug (a lot of information, useful for development/testing)
+# verbose (many rarely useful info, but not a mess like the debug level)
+# notice (moderately verbose, what you want in production probably)
+# warning (only very important / critical messages are logged)
+redis_log_level: notice
+redis_log_path: /var/log/redis/redis-server.log
+
+# In high requests-per-second environments you need an high backlog in order
+# to avoid slow clients connections issues. Note that the Linux kernel
+# will silently truncate it to the value of /proc/sys/net/core/somaxconn so
+# make sure to raise both the value of somaxconn and tcp_max_syn_backlog
+# in order to get the desired effect.
+redis_tcp_backlog: 128

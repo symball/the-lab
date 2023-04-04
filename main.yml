@@ -1,0 +1,205 @@
+---
+#
+# Setup working paths on Ansible controller
+#
+- name: Initial preparation for run
+  hosts: all
+  tags: [always]
+  tasks:
+    - name: Tell Ansible we are super user until otherwise checked
+      ansible.builtin.set_fact:
+        is_super: true
+    - name: Set to regular mode if logged in with common user
+      when: ansible_user == common_user
+      ansible.builtin.set_fact:
+        is_super: false
+    - name: Operating environment
+      ansible.builtin.debug:
+        msg: "{{ ansible_os_family }}-{{ ansible_distribution_major_version }} {{ ansible_architecture }} with super user mode: {{ is_super }}"
+    - name: Create control directory
+      delegate_to: localhost
+      file:
+        path: ansible_working_path
+        state: directory
+# #
+# # Common
+# #
+# - name: Import common role
+#   hosts: all
+#   tags: [common]
+#   tasks:
+#     - name: Perform some common tasks
+#       ansible.builtin.import_role:
+#         name: common
+#       when: include_common_management
+#
+# Desktop
+#
+- name: Import desktop role
+  hosts: desktop
+  tags: [desktop]
+  tasks:
+    - name: Include desktop management
+      ansible.builtin.import_role:
+        name: desktop
+      when: include_desktop_management
+#
+# kvm virtualisation
+#
+- name: Import kvm role
+  hosts: kvm
+  tags: [kvm]
+  tasks:
+    - name: Include kvm management
+      ansible.builtin.import_role:
+        name: kvm
+      when: include_kvm_management
+# #
+# # Certificate Authority
+# #
+# - name: Import Certificate Authority role
+#   hosts: certificate_authority
+#   tags: [certificate_authority]
+#   tasks:
+#     - name: Include Certificate Authority managed
+#       ansible.builtin.import_role:
+#         name: certificate_authority
+#       when: include_certificate_authority_management
+# - name: Distribute the CA chain cert
+#   hosts: all
+#   tasks:
+#     - name: Debug
+#       debug:
+#         msg: "include_certificate_authority_management = {{ include_certificate_authority_management }}"
+#     - name: Start Cert distribution
+#       when:
+#         - include_certificate_authority_management
+#         - certificate_authority_trust_chain
+#       ansible.builtin.import_tasks:
+#         tasks/certificate_authority_trust_chain.yml
+
+# #
+# # Docker
+# #
+# - name: Import docker role
+#   hosts: docker
+#   tags: [docker]
+#   tasks:
+#     - name: Include docker management
+#       ansible.builtin.import_role:
+#         name: docker
+#       when: include_docker_management
+# #
+# # Go
+# #
+# - name: Import Go role
+#   hosts: go
+#   tags: [go]
+#   tasks:
+#     - name: Include go management
+#       ansible.builtin.import_role:
+#         name: go
+#       when: include_go_management
+
+# #
+# # MariaDB
+# #
+# - name: Import MariaDB role
+#   hosts: mariadb
+#   tags: [mariadb]
+#   tasks:
+#     - name: Include mariadb management
+#       ansible.builtin.import_role:
+#         name: mariadb
+#       when: include_mariadb_management
+# #
+# # Nginx
+# #
+# - name: Import Nginx role
+#   hosts: nginx
+#   tags: [nginx]
+#   tasks:
+#     - name: Include nginx management
+#       ansible.builtin.import_role:
+#         name: nginx
+#       when: include_nginx_management
+# #
+# # NVM
+# #
+# - name: Import NVM role
+#   hosts: nvm
+#   tags: [nvm]
+#   tasks:
+#     - name: Include nvm management
+#       ansible.builtin.import_role:
+#         name: nvm
+#       when: include_nvm_management
+# #
+# # PostgreSQL
+# #
+# - name: Import PostgreSQL role
+#   hosts: postgresql
+#   tags: [postgresql]
+#   tasks:
+#     - name: Include postgresql management
+#       ansible.builtin.import_role:
+#         name: postgresql
+#       when: include_postgresql_management
+#
+# Terraform
+#
+- name: Import Terraform role
+  hosts: terraform
+  tags: [terraform]
+  tasks:
+    - name: Include terraform management
+      ansible.builtin.import_role:
+        name: terraform
+      when: include_terraform_management
+#
+# APPLICATION SPACE. ACTUAL DEPLOYED SERVICES SHOULD ALWAYS BE PLACED AFTER THIS MARKER
+#
+#
+# Docker Container Registry
+#
+# - name: Import Docker Container Registry role
+#   hosts: docker_container_registry
+#   tags: [docker_container_registry]
+#   tasks:
+#     - name: Include docker_container_registry management
+#       ansible.builtin.import_role:
+#         name: docker_container_registry
+#       when: include_docker_container_registry_management
+# #
+# # Home Assistant
+# #
+# - name: Import Home automation role
+#   hosts: home_assistant
+#   tags: [home_assistant]
+#   tasks:
+#     - name: Include home_assistant management
+#       ansible.builtin.import_role:
+#         name: home_assistant
+#       when: include_home_assistant_management
+# #
+# # Home Assistant
+# #
+# - name: Import forgejo role
+#   hosts: forgejo
+#   tags: [ forgejo ]
+#   tasks:
+#     - name: Include forgejo management
+#       ansible.builtin.import_role:
+#         name: forgejo
+#       when: include_forgejo_management
+# #
+# # Jenkins
+# #
+# - name: Import Jenkins role
+#   hosts: jenkins
+#   tags: [ jenkins ]
+#   tasks:
+#     - name: Include jenkins management
+#       ansible.builtin.import_role:
+#         name: jenkins
+#       when: include_jenkins_management

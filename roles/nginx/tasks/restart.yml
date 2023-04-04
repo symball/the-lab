@@ -1,0 +1,9 @@
+- hosts: nginx_facade
+  tasks:
+    - name: Test the Nginx configuration
+      command: nginx -t
+
+    - name: Restart nginx
+      command: "sudo /bin/systemctl restart nginx"
+      args:
+        warn: False

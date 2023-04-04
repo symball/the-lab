@@ -1,0 +1,28 @@
+---
+- name: Set some variables as facts for use outside role
+  set_fact:
+    nginx_facade_admin_email: "{{ nginx_facade_admin_email }}"
+    nginx_facade_cert_country: "{{ nginx_facade_cert_country }}"
+    nginx_facade_cert_state: "{{ nginx_facade_cert_state }}"
+    nginx_facade_cert_location: "{{ nginx_facade_cert_location }}"
+    nginx_facade_cert_org: "{{ nginx_facade_cert_org }}"
+    nginx_facade_cert_org_unit: "{{ nginx_facade_cert_org_unit }}"
+    nginx_facade_use_certbot: "{{ nginx_facade_use_certbot }}"
+    nginx_certificate_duration: "{{ nginx_certificate_duration }}"
+    nginx_certificate_type: "{{ nginx_certificate_type }}"
+    nginx_http_log_path: "{{ nginx_http_log_path }}"
+    nginx_http_ssl_protocols: "{{ nginx_http_ssl_protocols }}"
+    nginx_http_ssl_prefer_server_ciphers: "{{ nginx_http_ssl_prefer_server_ciphers }}"
+    nginx_user: "{{ nginx_user }}"
+    nginx_user_group: "{{ nginx_user_group }}"
+
+# The file is split like this for variable merging from role
+- name: nginx | Super 
+  when: is_super | bool
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  with_first_found:
+    - files:
+      - "{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
+      - "{{ ansible_os_family }}_super.yml"
+      skip: True

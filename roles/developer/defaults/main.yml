@@ -1,0 +1,21 @@
+---
+developer_use_intellij: true
+
+desktop_arch_packages:
+  - code
+  - dbeaver
+  - dbeaver-plugin-svg-format
+  - mysqlworkbench
+  - pgadmin4
+  
+desktop_arch_aur_packages:
+  - code-features
+  - code-marketplace
+  - insomnia
+  - rdm-bin
+  - stoplight-studio-appimage
+  
+
+desktop_windows_chocolatey_packages:
+  - dbeaver
+  - vscode

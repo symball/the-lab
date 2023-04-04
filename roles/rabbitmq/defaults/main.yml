@@ -1,0 +1,12 @@
+# https://www.rabbitmq.com/configure.html
+rabbitmq_port: 6020
+rabbitmq_acceptors: 10
+rabbitmq_log_level: info
+rabbitmq_log_path: /var/log/rabbitmq
+rabbitmq_default_user: pledgecamp
+rabbitmq_default_user_pass: development
+rabbitmq_default_user_admin: "true"
+rabbitmq_ubuntu_target: bionic
+
+rabbitmq_management_enabled: True
+rabbitmq_management_port: 6030

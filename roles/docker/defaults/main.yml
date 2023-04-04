@@ -1,0 +1,14 @@
+---
+docker_arch_packages:
+  - docker
+  - docker-compose
+
+docker_debian_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-compose-plugin
+  - python3-docker
+  - python3-paramiko
+
+docker_debian_credential_helper_version: "0.7.0"

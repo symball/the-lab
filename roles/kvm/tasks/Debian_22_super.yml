@@ -1,0 +1,32 @@
+---
+- name: super | Install qemu packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ qemu_debian_22_packages }}"
+
+- name: super | Install qemu GUI
+  become: true
+  when: "'desktop' in group_names"
+  ansible.builtin.apt:
+    name: "{{ qemu_debian_22_desktop_packages }}"
+
+- name: super | Add the user to the kvm user group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_ssh_user }}"
+    groups: kvm
+    append: true
+
+- name: super | Add the user to the libvirt user group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_ssh_user }}"
+    groups: libvirt
+    append: true
+
+- name: super | Make sure libvirt daemon is enabled and running
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: libvirtd

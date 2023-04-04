@@ -1,0 +1,15 @@
+- name: Add Ansible PPA repository
+  become: True
+  apt_repository:
+    repo: ppa:ansible/ansible
+
+- name: Install Ansible
+  become: True
+  apt:
+    update_cache: yes
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - ansible
+      - python3-docker
+      - python3-mysqldb

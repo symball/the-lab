@@ -1,0 +1,10 @@
+- name: Add IP address of all hosts to all hosts
+  become: true
+  ansible.builtin.blockinfile:
+    dest: /etc/hosts
+    marker: "# {mark} ANSIBLE INVENTORY HOST {{ inventory_name }}"
+    block: "{{ hostvars[inventory_name].ansible_host }} {{ hostvars[inventory_name].fqcdn }}"
+  when: hostvars[inventory_name].fqcdn is defined
+  with_items: "{{ groups.all }}"
+  loop_control:
+    loop_var: inventory_name

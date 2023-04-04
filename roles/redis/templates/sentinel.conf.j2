@@ -1,0 +1,18 @@
+port {{ redis_sentinel_port }}
+bind {{ redis_bind_address }}
+
+pidfile {{ common_working_path }}/var/redis-sentinel.pid
+logfile {{ common_log_path }}/redis-sentinel.log
+
+dir /tmp
+
+{% set hostAddress = hostvars[groups['redis'][0]]['ansible_ssh_host'] | default(hostvars[groups['redis'][0]]['ansible_host']) -%}
+sentinel monitor {{ redis_master_name }} {{ hostAddress }} {{ redis_port }} 2
+sentinel down-after-milliseconds {{ redis_master_name }} 3000
+sentinel failover-timeout {{ redis_master_name }} 180000
+sentinel parallel-syncs {{ redis_master_name }} 1
+
+protected-mode no
+sentinel config-epoch {{ redis_master_name }} 0
+sentinel leader-epoch {{ redis_master_name }} 0
+sentinel current-epoch 0

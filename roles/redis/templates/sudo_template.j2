@@ -1,0 +1,3 @@
+%{{ common_user }} ALL=NOPASSWD: /bin/systemctl enable redis.service
+%{{ common_user }} ALL=NOPASSWD: /bin/systemctl restart redis.service
+%{{ common_user }} ALL=NOPASSWD: /bin/systemctl start redis.service

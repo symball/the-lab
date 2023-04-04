@@ -1,0 +1,50 @@
+- name: Debian_docker | Add GPG key
+  become: True
+  apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+
+- name: Debian_docker | Add APT repository
+  become: True
+  apt_repository:
+    repo: >-
+      deb
+      https://download.docker.com/linux/ubuntu
+      {{ ansible_distribution_release }} stable
+    state: present
+
+- name: Debian_docker | Install packages
+  become: True
+  apt:
+    name: "{{ docker_debian_packages }}"
+
+- name: Create folder for Docker config
+  file:
+    path: "{{ ansible_env.HOME }}/.docker"
+    state: directory
+    mode: "0760"
+
+- name: Copy across the initial docker config telling it to use pass as credential store
+  ansible.builtin.copy:
+    src: "docker-config.json"
+    dest: "{{ ansible_env.HOME }}/.docker/config.json"
+
+- name: Debian_docker | Enable the Docker service
+  become: True
+  systemd:
+    name: docker
+    enabled: True
+    state: started
+
+- name: Debian_docker | Add User to Docker group
+  become: True
+  user:
+    name: "{{ ansible_ssh_user }}"
+    groups: docker
+    append: yes
+
+- name: Debian_docker | Download docker credential helper
+  become: true
+  ansible.builtin.get_url:
+    url: "https://github.com/docker/docker-credential-helpers/releases/download/v{{ docker_debian_credential_helper_version }}/docker-credential-pass-v{{ docker_debian_credential_helper_version }}.linux-amd64"
+    dest: "/usr/bin/docker-credential-pass"
+    mode: '0555'
+

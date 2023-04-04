@@ -1,0 +1,6 @@
+---
+arch_linux_vagrant_packages:
+  - vagrant
+
+windows_chocolatey_vagrant_packages:
+  - vagrant

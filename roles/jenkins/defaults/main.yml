@@ -1,0 +1,5 @@
+jenkins_debian_java_package: openjdk-17-jre-headless
+
+jenkins_reference: jenkins
+#jenkins_domain:
+jenkins_port: 8080

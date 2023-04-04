@@ -1,0 +1,46 @@
+- name: Variable fallback
+  set_fact:
+    domain: "{{ reference | default(domain) }}"
+
+- name: "Check switch to see if key setup for {{ domain }}"
+  become: True
+  stat:
+    path: "/etc/nginx/sec/{{ domain }}full.pem"
+  register: KEY_SETUP
+
+- name: Generate self signed security certificate
+  become: True
+  when:
+    - letsencrypt|bool == False
+    - KEY_SETUP.stat.exists == False
+  shell: >
+    sudo -u {{ nginx_user }}  
+    openssl req -x509 -nodes -days {{ nginx_certificate_duration }}  
+    -newkey {{ nginx_certificate_type }} 
+    -keyout /etc/nginx/sec/{{ domain }}priv.pem 
+    -out /etc/nginx/sec/{{ domain }}full.pem 
+    --subj '/C={{ nginx_facade_cert_country }}/ST={{ nginx_facade_cert_state }}/L={{ nginx_facade_cert_location }}/O={{ nginx_facade_cert_org }}/OU={{ nginx_facade_cert_org_unit }}/CN={{ domain }}'
+    -addext "subjectAltName = DNS:{{ domain }}"
+
+- name: Generate letsencrypt certificate
+  become: true
+  when:
+    - letsencrypt|bool == True
+    - KEY_SETUP.stat.exists == False
+  shell: >
+    letsencrypt certonly -n --webroot 
+    -w /etc/nginx/letsencrypt 
+    -m {{ nginx_facade_admin_email }} --agree-tos -d {{ domain }}
+
+- name: Symlink the certificate file in to place
+  when:
+    - letsencrypt|bool == True
+  become: True  
+  file:
+    src: "/etc/letsencrypt/live/{{ domain }}/{{ item.src }}"
+    dest: "{{ common_working_path }}/sec/{{ item.dest }}"
+    state: link
+    force: yes
+  with_items:
+    - { src: "fullchain.pem", dest: "{{ domain }}full.pem" }
+    - { src: "privkey.pem", dest: "{{ domain }}priv.pem" }

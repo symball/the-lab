@@ -1,0 +1,61 @@
+- name: Prepare Redis specific working paths
+  become: True
+  file:
+    state: directory
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    path: "{{ common_working_path }}/{{ item }}"
+  with_items:
+    - "redis/data"
+    - "redis/config"
+
+- name: Install Redis Server
+  become: True
+  apt:
+    name: redis-server
+    cache_valid_time: 600
+
+- name: Record Job number
+  become: True
+  copy:
+    content: "{{ setup_job_number }}"
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    dest: "{{ common_working_path }}/REDIS.ver"
+
+- name: Render the sudoers file allowing common user restart capability
+  become: True
+  template:
+    src: ../templates/sudo_template.j2
+    dest: /etc/sudoers.d/redis
+    mode: 0444
+
+- name: Stop the service in order to change configuration safely
+  become: True
+  systemd:
+    name: redis-server
+    state: stopped
+
+- name: Render the Redis Server configuration
+  become: True
+  template:
+    src: ../templates/redis.conf.j2
+    dest: "/etc/redis/redis.conf"
+
+- name: Overwrite the SystemD unit file
+  become: True
+  template:
+    src: ../templates/systemd.service.j2
+    dest: /lib/systemd/system/redis-server.service
+
+- name: Reload the SystemD daemon to pick up new unit file
+  become: True
+  systemd:
+    daemon_reload: yes
+
+- name: Enable the SystemD service
+  become: True
+  systemd:
+    name: redis-server
+    state: started
+    enabled: yes

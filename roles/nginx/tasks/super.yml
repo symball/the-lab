@@ -1,0 +1,74 @@
+
+- name: Install Nginx
+  become: True
+  apt:
+    name: "{{ packages }}"
+    update_cache: yes
+    cache_valid_time: 600
+  vars:
+    packages:
+      - certbot
+      - nginx
+      - apache2-utils
+
+
+- name: Make sure working directories are present
+  become: True
+  file:
+    state: directory
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    path: "{{ item }}"
+  loop:
+    - "{{ common_working_path }}/logs"
+    - "{{ common_working_path }}/letsencrypt"
+    - "{{ common_working_path }}/nginx"
+    - "{{ common_working_path }}/nginx-fallback"
+    - "{{ common_working_path }}/sec"
+    # This one is a workaround for filling up buffers when not run as owner
+    - /var/lib/nginx
+
+- name: Record Job number
+  become: True
+  copy:
+    content: "{{ setup_job_number }}"
+    dest: "{{ common_working_path }}/nginx_facade.ver"
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+
+- name: Copy across the fallback site
+  become: True
+  copy:
+    src: fallback_site/
+    dest: "{{ common_working_path }}/nginx-fallback"
+    mode: u=rwX,g=rX,o=rX
+
+- name: Check Diffie Helmann has been generated
+  become: True
+  stat:
+    path: "{{ common_working_path }}/sec/dhparam.pem"
+  register: DIFFIE_HELMANN_PRESENT
+
+- name: "Generate the Diffie Helmann. This may take a while, using {{ nginx_facade_diffie_hellman_bytes }} bytes"
+  become: True
+  command: "openssl dhparam -out {{ common_working_path }}/sec/dhparam.pem {{ nginx_facade_diffie_hellman_bytes }}"
+  when: DIFFIE_HELMANN_PRESENT.stat.exists == False
+
+- name: Copy over generic nginx configuration
+  become: True
+  template:
+    src: ../templates/nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+
+- name: Enable the Nginx service
+  become: True
+  systemd:
+    enabled: yes
+    name: nginx
+
+- name: Render the sudoers file allowing common user restart capability
+  become: True
+  template:
+    src: ../templates/sudo_template.j2
+    dest: /etc/sudoers.d/nginx_facade
+    mode: 0444

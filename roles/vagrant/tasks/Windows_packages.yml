@@ -1,0 +1,19 @@
+---
+- name: vagrant | Install packages
+  win_chocolatey:
+    name: "{{ windows_chocolatey_vagrant_packages }}"
+    state: present
+
+- name: vagrant | Install share plugin
+  ansible.windows.win_command:
+    cmd: vagrant plugin install vagrant-share
+
+- name: vagrant | Install libvirt plugin
+  when: "'libvirt' in group_names"
+  ansible.windows.win_command:
+    cmd: vagrant plugin install vagrant-libvirt
+
+- name: vagrant | Install virtualbox plugin
+  when: "'virtualbox' in group_names"
+  ansible.windows.win_command:
+    cmd: vagrant plugin install vagrant-vbguest

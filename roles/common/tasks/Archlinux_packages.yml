@@ -1,0 +1,13 @@
+---
+- name: Archlinux_packages | Install common
+  become: true
+  community.general.pacman:
+    name: "{{ common_arch_packages }}"
+    update_cache: true
+
+- name: Archlinux_packages | Replace iptables-legacy with iptables-nft
+  become: true
+  community.general.pacman:
+    name: iptables-nft
+    # Auto confirm replace
+    extra_args: --ask 4

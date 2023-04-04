@@ -1,0 +1,35 @@
+homeassistant: true
+
+# allow new devices to join
+permit_join: true
+
+# MQTT settings
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://localhost:{{ zigbee2mqtt_port }}
+  user: {{ zigbee2mqtt_user }}
+  password: {{ zigbee2mqtt_pass }}
+
+advanced:
+  adapter_concurrent: {{ zigbee2mqtt_adapter_concurrent }}
+  network_key: '!secret.yaml network_key'
+  transmit_power: {{ zigbee2mqtt_adapter_transmit_power }}
+
+{% if zigbee2mqtt_frontend_enabled %}
+frontend:
+  port: {{ zigbee2mqtt_frontend_port }}
+{% endif %}
+
+external_converters:
+  - AD-GU10RGBW3001.js
+
+# Serial settings
+serial:
+  # Location of CC2531 USB sniffer
+  port: {{ zigbee_dongle_path }}
+
+devices:
+{% for device in zigbeedevices %}
+  '{{ device.id }}':
+    friendly_name: '{{ device.friendly_name }}'
+{% endfor %}

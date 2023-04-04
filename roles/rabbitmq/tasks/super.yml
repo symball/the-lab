@@ -1,0 +1,54 @@
+- name: Add packagecloud apt key
+  become: True
+  apt_key:
+   url: "https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey"
+   state: present
+
+- name: Adding package cloud repo
+  become: True
+  copy:
+   content: "deb https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ {{ rabbitmq_ubuntu_target }} main"
+   dest: /etc/apt/sources.list.d/rabbitmq_rabbitmq-server.list
+- name: Install the RabbitMQ package
+  become: True
+  apt:
+    name: rabbitmq-server
+    state: present
+
+- name: Enable the management plugin
+  when: rabbitmq_management_enabled
+  become: True
+  shell: >
+    /usr/sbin/rabbitmq-plugins enable rabbitmq_management
+
+- name: Render the configuration file
+  become: True
+  template:
+    src: ../templates/rabbitmq.conf.j2
+    dest: /etc/rabbitmq/rabbitmq.conf
+
+- name: Restart the service to reload config
+  become: True
+  service:
+    name: rabbitmq-server
+    state: restarted
+    enabled: True
+
+- name: "Check switch RABBITMQ_CONFIGURED_{{ inventory_hostname }}"
+  delegate_to: localhost
+  stat:
+    path: "{{ ansible_control_flags_path }}/RABBITMQ_CONFIGURED_{{ inventory_hostname }}"
+  register: RABBITMQ_CONFIGURED
+
+- name: Reset RabbitMQ settings to coincide with config
+  become: True
+  when: RABBITMQ_CONFIGURED.stat.exists == False
+  shell: >
+    rabbitmqctl stop_app && rabbitmqctl reset && rabbitmqctl start_app
+
+- name: "Control Switch: RABBITMQ_CONFIGURED_{{ inventory_hostname }}"
+  delegate_to: localhost
+  copy:
+    content: ""
+    dest: "{{ ansible_control_flags_path }}/RABBITMQ_CONFIGURED_{{ inventory_hostname }}"
+

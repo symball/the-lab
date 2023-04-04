@@ -1,0 +1,12 @@
+---
+arch_linux_virtualbox_packages:
+  - virtualbox
+  - virtualboz-guest-iso
+  - virtualbox-host-modules-arch
+
+arch_linux_virtualbox_aur_packages:
+  - virtualbox-ext-oracle
+
+windows_chocolatey_virtualbox_packages:
+  - virtualbox
+  - virtualbox-guest-additions-guest.install

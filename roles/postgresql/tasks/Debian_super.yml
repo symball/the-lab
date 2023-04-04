@@ -1,0 +1,23 @@
+- name: Install packages
+  become: True
+  apt:
+    name: "{{ postgres_debian_packages }}"
+      
+- name: Start postgresql service
+  become: True
+  service:
+    name: postgresql
+    state: started
+
+- name: Render configuration files
+  become: True
+  template:
+    src: "postgresql-{{ postgresql_version }}.conf.j2"
+    dest: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+
+- name: Restart PostgreSQL service
+  become: True
+  service:
+    name: postgresql
+    state: restarted
+    enabled: True

@@ -1,0 +1,7 @@
+---
+- name: Debian_update | Install common
+  become: true
+  ansible.builtin.apt:
+    upgrade: true
+    update_cache: yes
+    cache_valid_time: 600

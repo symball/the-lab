@@ -1,0 +1,13 @@
+---
+- name: Debian_super | Update system packages
+  ansible.builtin.import_tasks: Debian_system_update.yml
+- name: Debian_super | Install common app loadout
+  ansible.builtin.import_tasks: Debian_packages.yml
+- name: Debian_super | Setup common user
+  when: common_user_create
+  ansible.builtin.import_tasks: linux_common_user.yml
+- name: Debian_super | Hostname
+  ansible.builtin.import_tasks: set_hostname.yml
+- name: Debian_super | host aliases
+  ansible.builtin.import_tasks: set_inventory_hosts.yml
+

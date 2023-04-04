@@ -1,0 +1,7 @@
+arch_linux_terraform_packages:
+  - cdrkit
+  - terraform
+
+terraform_repository_base_url: https://tjend.github.io/repo_terraform
+terraform_repository_key_path: https://tjend.github.io/repo_terraform/repo_terraform.key
+

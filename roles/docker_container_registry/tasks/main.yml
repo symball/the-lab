@@ -1,0 +1,5 @@
+---
+# The file is split like this for variable merging from role
+- name: Common Super
+  when: is_super
+  ansible.builtin.import_tasks: ./super.yml

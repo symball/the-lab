@@ -1,0 +1,17 @@
+- set_fact:
+    host: "{{ vhost | default(user) }}"
+
+- name: "Try changing the users password ({{ password }}). SAFE_TO_FAIL=user not yet setup"
+  become: True
+  register: PASSWORD_CHANGED
+  ignore_errors: yes
+  shell: >
+    rabbitmqctl change_password {{ user }} '{{ password }}'
+
+- name: Reset RabbitMQ settings to coincide with config
+  become: True
+  when: PASSWORD_CHANGED.failed
+  shell: >
+    rabbitmqctl add_vhost {{ host }} && \
+    rabbitmqctl add_user "{{ user }}" "{{ password }}" && \
+    rabbitmqctl set_permissions -p "{{ host }}" "{{ user }}" ".*" ".*" ".*"

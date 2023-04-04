@@ -1,0 +1,4 @@
+# The file is split like this for variable merging from role
+- name: RabbitMQ Super
+  when: is_super == True
+  import_tasks: ./super.yml

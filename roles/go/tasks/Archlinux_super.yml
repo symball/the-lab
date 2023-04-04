@@ -1,0 +1,10 @@
+- name: GoLang installed
+  become: True
+  community.general.pacman:
+    name: "{{ go_arch_packages }}"
+
+- name: Update paths for golang
+  become: True
+  ansible.builtin.copy:
+    src: golang_path.sh
+    dest: /etc/profile.d/golang_path.sh

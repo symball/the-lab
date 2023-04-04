@@ -1,0 +1,15 @@
+---
+- name: Windows_super | Install common app loadout
+  ansible.builtin.import_tasks: Windows_packages.yml
+# - name: Archlinux_super | AUR helper
+#   ansible.builtin.import_tasks: Archlinux_yay.yml
+# - name: Archlinux_super | Rich Shell
+#   ansible.builtin.import_tasks: Archlinux_rich_shell.yml
+#   when: rich_shell
+# - name: Archlinux_super | Hostname
+#   ansible.builtin.import_tasks: set_hostname.yml
+# - name: Archlinux_super | Update system packages
+#   ansible.builtin.import_tasks: Archlinux_system_update.yml
+# - name: Archlinux_super | Docker
+#   ansible.builtin.import_tasks: Archlinux_docker.yml
+#   when: docker_install

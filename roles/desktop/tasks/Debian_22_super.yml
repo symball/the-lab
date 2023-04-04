@@ -1,0 +1,5 @@
+
+- name: Debian_packages | Install common
+  become: true
+  ansible.builtin.apt:
+    name: "{{ desktop_debian_22_packages }}"

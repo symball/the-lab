@@ -1,0 +1,84 @@
+---
+- name: Archlinux_yay | Create the AUR build user
+  become: true
+  ansible.builtin.user:
+    name: "{{ aur_build_user }}"
+    create_home: true
+    group: wheel
+
+- name: Archlinux_yay | Allow the AUR build user to run `sudo pacman` without a password
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/11-pacman-{{ aur_build_user }}
+    line: "{{ aur_build_user }} ALL=(ALL) NOPASSWD: /usr/bin/pacman"
+    create: true
+    validate: visudo -cf %s
+    mode: '0400'
+
+- name: Archlinux_yay | Git checkout
+  ansible.builtin.git:
+    repo: https://aur.archlinux.org/yay-bin.git
+    dest: "{{ ansible_env.HOME }}/aur/yay"
+    version: "{{ yay_version }}"
+
+- name: Archlinux_yay | Read pkgver
+  ansible.builtin.shell:
+    # noqa: command-instead-of-module
+    cmd: sed -n 's/^pkgver=*//p' PKGBUILD
+  register: pkgver
+  changed_when: pkgver.stdout | length > 0
+  args:
+    chdir: "{{ ansible_env.HOME }}/aur/yay"
+
+- name: Archlinux_yay | Read pkgrel
+  ansible.builtin.shell:
+    # noqa: command-instead-of-module
+    cmd: sed -n 's/^pkgrel=*//p' PKGBUILD
+  register: pkgrel
+  changed_when: pkgrel.stdout | length > 0
+  args:
+    chdir: "{{ ansible_env.HOME }}/aur/yay"
+
+- name: Archlinux_yay | Build
+  ansible.builtin.command:
+    chdir: "{{ ansible_env.HOME }}/aur/yay"
+    cmd: makepkg
+  args:
+    creates: "{{ ansible_env.HOME }}/aur/yay/yay-bin-{{ pkgver.stdout }}-{{ pkgrel.stdout }}-x86_64.pkg.tar.zst"
+
+- name: Archlinux_yay | Install
+  become: true
+  community.general.pacman:
+    name: "{{ ansible_env.HOME }}/aur/yay/yay-bin-{{ pkgver.stdout }}-{{ pkgrel.stdout }}-x86_64.pkg.tar.zst"
+    state: present
+
+- name: Ensure paths for config loading present
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "/home/{{ aur_build_user }}"
+    owner: "{{ aur_build_user }}"
+    group: "wheel"
+
+- name: Archlinux_yay | Check if development DB already setup
+  become: true
+  become_user: "{{ aur_build_user }}"
+  ansible.builtin.stat:
+    path: /home/{{ aur_build_user }}/.yay-setup
+  register: yay_setup_flag
+
+- name: Archlinux_yay | Create development package DB for packages installed without yay
+  become: true
+  become_user: "{{ aur_build_user }}"
+  when: not yay_setup_flag.stat.exists
+  ansible.builtin.command:
+    cmd: yay -Y --gendb
+
+- name: Archlinux_yay | Create a flag in AUR users home path to stop development DB from being created again
+  become: true
+  ansible.builtin.copy:
+    content: ""
+    owner: "{{ aur_build_user }}"
+    group: wheel
+    dest: /home/{{ aur_build_user }}/.yay-setup
+    mode: "0644"

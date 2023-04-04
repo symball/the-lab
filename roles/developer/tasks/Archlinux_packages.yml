@@ -1,0 +1,20 @@
+---
+- name: developer | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ arch_linux_developer_packages }}"
+
+- name: developer | Install AUR packages if helper enabled
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  when: yay_install
+  vars:
+    aur_packages: "{{ arch_linux_developer_aur_packages }}"
+
+- name: developer | Install Jetbrains Toolbox
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  when:
+    - yay_install
+    - developer_use_intellij
+  vars:
+    aur_packages:
+      - jetbrains-toolbox

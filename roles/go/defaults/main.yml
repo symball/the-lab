@@ -1,0 +1,10 @@
+go_arch_packages:
+  - go
+  - go-tools
+  - gopls
+  - delve
+
+go_debian_packages:
+  - golang
+  - gopls
+  - delve

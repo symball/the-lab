@@ -1,0 +1,45 @@
+nginx_arch_linux_packages:
+  - apache
+  - nginx
+
+nginx_debian_linux_packages:
+  - apache2-utils
+  - certbot
+  - nginx
+
+nginx_user: http
+nginx_user_group: http
+nginx_worker_processes: auto
+nginx_cpu_affinity: auto
+
+nginx_events_worker_connections: 1024
+nginx_events_multi_accept: "on"
+
+nginx_http_types_hash_max_size: 4096
+nginx_http_client_max_body_size: 16M
+nginx_http_keepalive_timeout: 60
+nginx_http_ssl_protocols: TLSv1 TLSv1.1 TLSv1.2 TLSv1.3
+nginx_http_ssl_prefer_server_ciphers: "on"
+
+nginx_http_log_path: /var/log/nginx
+nginx_http_log_error: "{{ nginx_http_log_path }}/error.log warn"
+nginx_http_log_access: "{{ nginx_http_log_path }}/access.log"
+nginx_log_format: |-
+  '$remote_addr - $remote_user [$time_local] "$request" '
+  '$status $body_bytes_sent "$http_referer" '
+  '"$http_user_agent" "$http_x_forwarded_for"'
+
+nginx_facade_diffie_hellman_bytes: 2048
+nginx_facade_cert_country: HK
+nginx_facade_cert_state: HK
+nginx_facade_cert_location: The Island
+nginx_facade_cert_org: Development Certificate
+nginx_facade_cert_org_unit: Symbolic
+nginx_facade_use_certbot: False
+nginx_certificate_duration: 3650
+nginx_certificate_type: rsa:2048
+nginx_pid_path: /run/nginx
+nginx_pid_file: "{{ nginx_pid_path }}/nginx.pid"
+nginx_ssl_ciphers: "ECDH+AESGCM:ECDH+CHACHA20:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS:!AESCCM"
+nginx_ssl_protocols: "TLSv1 TLSv1.1 TLSv1.2"
+nginx_facade_admin_email: "test@local.com"

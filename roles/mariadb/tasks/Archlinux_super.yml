@@ -1,0 +1,55 @@
+---
+- name: super | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ mariadb_packages }}"
+
+- name: super | Copy across configuration
+  become: true
+  ansible.builtin.template:
+    src: server.cnf.j2
+    dest: /etc/my.cnf.d/server.cnf
+    owner: "{{ mariadb_user }}"
+    group: "{{ mariadb_group }}"
+    mode: "0644"
+
+- name: super | Check if MariaDB has already been setup
+  become: true
+  ansible.builtin.stat:
+    path: /etc/my.cnf.d/.setup_flag
+  register: mariadb_setup_flag
+
+- name: super | Perform an initial setup
+  become: true
+  when: not mariadb_setup_flag.stat.exists
+  ansible.builtin.command:
+    cmd: mariadb-install-db --user=mysql --basedir=/usr --datadir={{ mariadb_data_dir }}
+
+- name: super | Make sure the test DB is deleted
+  become: true
+  ansible.builtin.file:
+    state: absent
+    path: "{{ mariadb_data_dir }}/test"
+
+- name: super | Make sure MariaDB daemon is running
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: mariadb
+
+- name: super | Attempt to drop the initial empty users
+  become: true
+  when: not mariadb_setup_flag.stat.exists
+  ansible.builtin.command:
+    cmd: mysql -e "{{ item }}"
+  loop:
+    - DELETE FROM mysql.user WHERE user=''
+    - FLUSH PRIVILEGES
+
+- name: super | Create a flag in SQL config path to tell it MariaDB has undergone initial setup
+  become: true
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/my.cnf.d/.setup_flag
+    mode: "0644"

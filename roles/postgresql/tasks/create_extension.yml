@@ -1,0 +1,11 @@
+- name: Check if the extension is already installed
+  become: True
+  ignore_errors: yes
+  shell: >
+    sudo -u postgres psql -U postgres -d {{ schema }} -c "select extname from pg_extension where extname='{{ extension }}'" | grep '1 row'
+  register: IS_EXTENSION_ENABLED
+
+- name: "Enable {{ extension }} on {{ schema }}"
+  when: IS_EXTENSION_ENABLED.stdout != "(1 row)"
+  become: True
+  command: sudo -u postgres psql -U postgres -d {{ schema }} -c "CREATE EXTENSION {{ extension }}"

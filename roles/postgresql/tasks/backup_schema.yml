@@ -1,0 +1,26 @@
+- hosts: postgresql
+  run_once: True
+  tasks:
+  - name: If using normal filename
+    set_fact:
+      file_name: "{{ backup_name | default('{{ schema_name }}__{{ ansible_date_time.epoch }}') }}"
+
+  - name: Try to perform the backup
+    become: True
+    shell: >
+      sudo -u postgres pg_dump -n '{{ schema_name }}' {{ schema_name }} > {{ file_name }}.sql
+    args:
+      chdir: /tmp
+      warn: no
+
+  - name: Copy the backup to Ansible for later use
+    become: True
+    fetch:
+      src: "/tmp/{{ file_name }}.sql"
+      dest: "{{ common_backup_path }}/postgres_{{ file_name }}"
+
+  - name: Cleanup file on remote
+    become: True
+    file:
+      state: absent
+      path: "/tmp/{{ file_name }}.sql"

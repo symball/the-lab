@@ -1,0 +1,42 @@
+---
+- name: setup_user_db | Schema name fallback to user name if necessary
+  ansible.builtin.set_fact:
+    schema_name: "{{ schema | default(user_name) }}"
+
+- name: setup_user_db | Create user if not exists
+  become: true
+  ansible.builtin.command:
+    # noqa: no-changed-when
+    cmd: >-
+      mysql -e "
+        CREATE USER IF NOT EXISTS '{{ user_name }}'@'localhost'
+        IDENTIFIED BY '{{ user_pass }}'
+      "
+
+- name: setup_user_db | Create DB schema if not exists
+  become: true
+  ansible.builtin.command:
+    # noqa: no-changed-when
+    cmd: >
+      mysql -e "
+        CREATE DATABASE IF NOT EXISTS {{ schema_name }}
+      "
+
+- name: setup_user_db | Grant privileges on DB
+  become: true
+  ansible.builtin.command:
+    # noqa: no-changed-when
+    cmd: >
+      mysql -e "
+        GRANT ALL PRIVILEGES ON {{ schema_name }}.*
+        TO '{{ user_name }}'@'localhost'
+      "
+
+- name: setup_user_db | Privilege flush
+  become: true
+  ansible.builtin.command:
+    # noqa: no-changed-when
+    cmd: >
+      mysql -e "
+        FLUSH PRIVILEGES
+      "

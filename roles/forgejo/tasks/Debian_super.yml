@@ -1,0 +1,119 @@
+- set_fact:
+    signal_forgejo_download: "forgejo_downloaded_v{{ forgejo_version }}"
+    db_host: "{{ hostvars[groups['postgresql'][0]]['inventory_hostname'] }}"
+    db_port: "{{ hostvars[groups['postgresql'][0]]['postgresql_port'] }}"
+    domain: "{{ forgejo_domain | default('git.' + inventory_hostname) }}"
+
+- name: Add the GPG key for forgejo
+  become: true
+  ansible.builtin.shell: >
+    gpg --keyserver keys.openpgp.org --recv {{ forgejo_gpg_key_id }}
+
+- name: Check whether Forgejo version already downloaded
+  become: true
+  ansible.builtin.stat:
+    path: "{{ remote_state_path }}/{{ signal_forgejo_download }}"
+  register: forgejo_downloaded
+
+- name: Download binary
+  become: true
+  when: not forgejo_downloaded.stat.exists
+  ansible.builtin.get_url:
+    url: "https://codeberg.org/forgejo/forgejo/releases/download/v{{ forgejo_version }}/forgejo-{{ forgejo_version }}-linux-amd64"
+    dest: "/tmp/forgejo-{{ forgejo_version }}-linux-amd64"
+    mode: '0555'
+
+- name: Download ASC signature file for verification
+  become: true
+  when: not forgejo_downloaded.stat.exists
+  ansible.builtin.get_url:
+    url: "https://codeberg.org/forgejo/forgejo/releases/download/v{{ forgejo_version }}/forgejo-{{ forgejo_version }}-linux-amd64.asc"
+    dest: "/tmp/forgejo-{{ forgejo_version }}-linux-amd64.asc"
+
+- name: Verify the binary using GPG
+  become: true
+  when: not forgejo_downloaded.stat.exists
+  ansible.builtin.shell: >
+    gpg --verify forgejo-{{ forgejo_version }}-linux-amd64.asc forgejo-{{ forgejo_version }}-linux-amd64
+  args:
+    chdir: /tmp
+
+- name: Create state signal to signify version downloaded
+  when: not forgejo_downloaded.stat.exists
+  import_tasks: tasks/state_signal_create.yml
+  vars:
+    signal: "{{ signal_forgejo_download }}"
+
+- name: Move the binary
+  become: true
+  when: not forgejo_downloaded.stat.exists
+  ansible.builtin.copy:
+    remote_src: true
+    mode: '0555'
+    src: "/tmp/forgejo-{{ forgejo_version }}-linux-amd64"
+    dest: /usr/local/bin/forgejo
+
+- name: Create forgejo group
+  become: True
+  group:
+    name: "{{ forgejo_system_group }}"
+    state: present
+
+- name: Create a forgejo user
+  become: true
+  ansible.builtin.user:
+    home: "{{ forgejo_system_user_home_path }}"
+    name: "{{ forgejo_system_user }}"
+    groups: "{{ forgejo_system_group }}"
+
+- name: Create the forgejo DB
+  delegate_to: "{{ db_host }}"
+  import_tasks: tasks/postgresql_setup_user_db.yml
+  vars:
+    user_name: "{{ forgejo_db_user }}"
+    user_pass: "{{ forgejo_db_pass }}"
+    host: "{{ db_host }}"
+
+- name: Create supporting paths
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ forgejo_folder }}"
+    owner: "{{ forgejo_system_user }}"
+    group: "{{ forgejo_system_group }}"
+  loop:
+    - "{{ forgejo_system_path }}/custom"
+    - "{{ forgejo_system_path }}/data"
+    - "{{ forgejo_system_path }}/log"
+    - /etc/forgejo
+  loop_control:
+    loop_var: forgejo_folder
+
+- name: Create a SystemD service
+  become: True
+  ansible.builtin.template:
+    src: systemd.service.j2
+    dest: /usr/lib/systemd/system/forgejo.service
+
+- name: Create config
+  become: True
+  ansible.builtin.template:
+    owner: "{{ forgejo_system_user }}"
+    group: "{{ forgejo_system_group }}"
+    src: app.ini.j2
+    dest: /etc/forgejo/app.ini
+
+- name: Create a reverse proxy service
+  import_tasks: tasks/nginx_reverse_proxy.yml
+  vars:
+    reference: "{{ role_name }}"
+    domain: "{{ domain }}"
+    letsencrypt: "{{ nginx_facade_use_certbot }}"
+    app_port: "{{ forgejo_http_port }}"
+
+- name: Enable and start the forgejo service
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: forgejo

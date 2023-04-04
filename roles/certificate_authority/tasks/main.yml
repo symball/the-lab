@@ -1,0 +1,29 @@
+---
+- name: Set some variables as facts for use outside role on localhost
+  set_fact:
+    certificate_authority_cert_format: "{{ certificate_authority_cert_format }}"
+    certificate_authority_country_name: "{{ certificate_authority_country_name }}"
+    certificate_authority_state_or_province: "{{ certificate_authority_state_or_province }}"
+    certificate_authority_locality_name: "{{ certificate_authority_locality_name }}"
+    certificate_authority_organization_name: "{{ certificate_authority_organization_name }}"
+    certificate_authority_organization_unit: "{{ certificate_authority_organization_unit }}"
+    certificate_authority_email_contact: "{{ certificate_authority_email_contact }}"
+    certificate_authority_intermediate_path: "{{ certificate_authority_intermediate_path }}"
+    certificate_authority_user: "{{ certificate_authority_user }}"
+    certificate_authority_algorithm: "{{ certificate_authority_algorithm }}"
+    certificate_authority_algorithm_rsa_bytes: "{{ certificate_authority_algorithm_rsa_bytes }}"
+    certificate_authority_algorithm_rsa_exponent: "{{ certificate_authority_algorithm_rsa_exponent }}"
+    certificate_authority_serial_number_length: "{{ certificate_authority_serial_number_length }}"
+    certificate_authority_server_cert_duration_days: "{{ certificate_authority_server_cert_duration_days }}"
+    certificate_authority_intermediate_password: "{{ certificate_authority_intermediate_password }}"
+- name: common | Super
+  when: is_super | bool
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  with_first_found:
+    - files:
+      - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}_super.yml"
+      - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_super.yml"
+      - "{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
+      - "{{ ansible_os_family }}_super.yml"
+      skip: True

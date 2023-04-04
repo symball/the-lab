@@ -1,0 +1,21 @@
+postgres_debian_packages:
+  - postgresql
+  - postgresql-client
+  - postgresql-contrib
+
+postgresql_port: 5432
+postgresql_listen_address: '*'
+postgresql_version: 14
+postgresql_socket_path: "/var/run/postgresql"
+postgresql_data_path: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_pid_path: "/var/run/postgresql/{{ postgresql_version }}-main.pid"
+postgresql_max_connections: 100
+postgresql_password_encryption: scram-sha-256
+
+# Minimum 128KB
+postgresql_shared_buffer_size: 128MB
+# on, off, try
+postgresql_huge_pages: try
+# Minimum 800KB
+postgresql_temp_buffer_size: 8MB
+postgresql_max_prepared_transactions: 0

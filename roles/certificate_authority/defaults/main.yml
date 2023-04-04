@@ -1,0 +1,36 @@
+---
+certificate_authority_debian_packages:
+  - ca-certificates
+  - openssl
+
+certificate_authority_user: certy
+certificate_authority_user_group: "{{ certificate_authority_user }}"
+
+certificate_authority_root_path: /var/lib/certificate_authority
+certificate_authority_intermediate_path: /var/lib/certificate_authority/intermediate
+
+certificate_authority_root_duration_days: 7300
+certificate_authority_cert_revocation_list_days: 30
+certificate_authority_server_cert_duration_days: 375
+
+certificate_authority_cert_format: pem
+certificate_authority_serial_number_length: 12
+# If you are planning to deploy web services, use RSA
+certificate_authority_algorithm: RSA
+certificate_authority_algorithm_rsa_bytes: 2048
+certificate_authority_algorithm_rsa_exponent: 65537
+
+certificate_authority_user_cert_comment: "OpenSSL Generated User Certificate"
+certificate_authority_server_cert_comment: "OpenSSL Generated Server Certificate"
+certificate_authority_country_name: CN
+certificate_authority_state_or_province: HKSAR
+certificate_authority_locality_name: Sai Ying Pun
+certificate_authority_organization_name: Symbolic Technology
+certificate_authority_organization_unit: Technology
+certificate_authority_email_contact: contact@simonball.me
+#
+# Secrets - The following are included for reference only but, 100% should be
+#           included in a Vault
+#
+certificate_authority_root_password: development
+certificate_authority_intermediate_password: development

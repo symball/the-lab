@@ -1,0 +1,61 @@
+---
+rich_shell: false
+
+yay_install: true
+yay_version: master
+aur_build_user: aurbuilder
+
+common_arch_packages:
+  - base-devel
+  - coreutils
+  - croc
+  - git
+  - jq
+  - lynis
+  - pacman-contrib
+  - p7zip
+  - pass
+  - sudo
+
+common_arch_rich_shell_packages:
+  - awesome-terminal-fonts
+  - powerline-fonts
+  - zsh
+  - zsh-theme-powerlevel10k
+
+common_debian_packages:
+  - aptitude
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - git
+  - gnupg
+  - jq
+  - lynis
+  - net-tools
+  - ntp
+  - pass
+  - software-properties-common
+
+common_debian_aarch64_packages:
+  - aptitude
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - git
+  - jq
+  - lynis
+  - net-tools
+  - ntp
+  - pass
+  - software-properties-common
+
+common_windows_chocolatey__packages:
+  - 7zip.install
+  - age.portable
+  - croc
+  - curl
+  - git
+  - hashcheck
+  - jq
+  - sd-card-formatter

@@ -1,0 +1,84 @@
+- set_fact:
+    postgresql_version: "{{ hostvars[host]['postgresql_version'] }}"
+    postgresql_password_encryption: "{{ hostvars[host]['postgresql_password_encryption'] }}"
+    connect_from: "{{ allowed_from | default('0.0.0.0/0') }}"
+    schema_name: "{{ schema | default(user_name) }}"
+    user_exists: False
+    schema_exists: False
+
+- name: Check if user exists
+  become: True
+  ansible.builtin.shell:
+    cmd: >
+      sudo -u postgres psql -tXAc
+      "SELECT 1 FROM pg_roles WHERE rolname='{{ user_name }}'" |
+      grep -q 1; echo $?
+  args:
+    chdir: /tmp
+  register: POSTGRES_USER_SETUP
+
+- name: Set boolean flag for user setup state
+  when: POSTGRES_USER_SETUP.stdout == "0"
+  set_fact:
+    user_exists: True
+
+- name: Check if schema exists
+  become: True
+  ansible.builtin.shell:
+    cmd: >
+      sudo -u postgres psql -lqt | grep -q {{ schema_name }}; echo $?
+  args:
+    chdir: /tmp
+  register: POSTGRES_SCHEMA_SETUP
+
+- name: Set boolean flag for schema setup state
+  when: POSTGRES_SCHEMA_SETUP.stdout == "0"
+  set_fact:
+    schema_exists: True
+
+- name: Create user
+#  no_log: true
+  become: True
+  ansible.builtin.command:
+    cmd: >
+      sudo -u postgres psql -c 
+      "CREATE USER {{ user_name }} WITH ENCRYPTED PASSWORD '{{ user_pass }}'"
+  when: user_exists == False
+
+- name: Change password
+  become: True
+  when: user_exists == True
+  ansible.builtin.command:
+    cmd: >
+      sudo -u postgres psql -c  
+      "ALTER USER {{ user_name }} WITH ENCRYPTED PASSWORD '{{ user_pass }}'"
+
+- name: Create schema
+  when: schema_exists == False
+  become: True
+  ansible.builtin.command:
+    cmd: >
+      sudo -u postgres psql -c  
+      "CREATE DATABASE {{ schema_name }}"
+
+- name: Grant privileges
+  when: schema_exists == False
+  become: True
+  ansible.builtin.command:
+    cmd: >
+      sudo -u postgres psql -c 
+      "GRANT ALL PRIVILEGES ON DATABASE {{ schema_name }} TO {{ user_name }}"
+
+- name: Create security rule for user
+  become: True
+  ansible.builtin.blockinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    block: |
+      host    {{ schema_name }}             {{ user_name }}      {{ connect_from }}               {{ postgresql_password_encryption }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ schema_name }} security"
+
+- name: Reload postgresql service
+  become: True
+  service:
+    name: postgresql
+    state: restarted

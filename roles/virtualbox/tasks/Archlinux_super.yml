@@ -1,0 +1,18 @@
+---
+- name: virtualbox | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ arch_linux_virtualbox_packages }}"
+
+- name: packages | Install AUR packages
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  when: yay_install
+  vars:
+    aur_packages: "{{ arch_linux_virtualbox_aur_packages }}"
+
+- name: virtualbox | Add the user to the vboxusers user group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_ssh_user }}"
+    groups: vboxusers
+    append: true

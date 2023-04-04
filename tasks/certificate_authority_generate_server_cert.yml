@@ -1,0 +1,106 @@
+- name: Variable fallback
+  set_fact:
+    in_country_name: "{{ country | default(hostvars[groups['certificate_authority'][0]]['certificate_authority_country_name']) }}"
+    in_state_or_province: "{{ state_or_privince | default(hostvars[groups['certificate_authority'][0]]['certificate_authority_state_or_province']) }}"
+    in_locality: "{{ locality_name | default(hostvars[groups['certificate_authority'][0]]['certificate_authority_locality_name']) }}"
+    in_organization_name: "{{ organization_name | default(hostvars[groups['certificate_authority'][0]]['certificate_authority_organization_name']) }}"
+    in_organization_unit: "{{ organization_unit | default(hostvars[groups['certificate_authority'][0]]['certificate_authority_organization_unit']) }}"
+    in_email_contact: "{{ email_contact | default(hostvars[groups['certificate_authority'][0]]['certificate_authority_email_contact']) }}"
+    certificate_authority_intermediate_path: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_intermediate_path'] }}"
+    certificate_authority_cert_format: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_cert_format'] }}"
+    certificate_authority_user: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_user'] }}"
+    certificate_authority_algorithm: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_algorithm'] }}"
+    certificate_authority_algorithm_rsa_bytes: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_algorithm_rsa_bytes'] }}"
+    certificate_authority_algorithm_rsa_exponent: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_algorithm_rsa_exponent'] }}"
+    certificate_authority_intermediate_password: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_intermediate_password'] }}"
+    certificate_authority_serial_number_length: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_serial_number_length'] }}"
+    certificate_authority_server_cert_duration_days: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_server_cert_duration_days'] }}"
+
+- name: Set subject
+  set_fact:
+    altName: "DNS: {{ cert_domain }}, email:{{ in_email_contact }}"
+    subject: "/C={{ in_country_name }}\
+      /ST={{ in_state_or_province }}\
+      /L={{ in_locality }}\
+      /O={{ in_organization_name }}\
+      /OU={{ in_organization_unit }}\
+      /CN={{ cert_domain }}"
+
+- name: Check whether private key exists
+  become: true
+  ansible.builtin.stat:
+    path: "{{ certificate_authority_intermediate_path }}/private/{{ cert_domain }}.key.{{ certificate_authority_cert_format }}"
+  register: key
+
+- name: Generate private key
+  become: true
+  when: not key.stat.exists
+  ansible.builtin.shell: >-
+    sudo -u {{ certificate_authority_user }} 
+    openssl genpkey -algorithm {{ certificate_authority_algorithm }}
+    {% if certificate_authority_algorithm == "RSA" %}-pkeyopt rsa_keygen_bits:{{ certificate_authority_algorithm_rsa_bytes }}{% endif %}
+    {% if certificate_authority_algorithm == "RSA" %}-pkeyopt rsa_keygen_pubexp:{{ certificate_authority_algorithm_rsa_exponent }}{% endif %}
+    -out {{ certificate_authority_intermediate_path }}/private/{{ cert_domain }}.key.{{ certificate_authority_cert_format }}
+
+- name: Make private key read only
+  become: true
+  ansible.builtin.file:
+    state: file
+    path: "{{ certificate_authority_intermediate_path }}/private/{{ cert_domain }}.key.{{ certificate_authority_cert_format }}"
+    mode: 0400
+
+- name: Check whether cert signing request exists
+  become: true
+  ansible.builtin.stat:
+    path: "{{ certificate_authority_intermediate_path }}/csr/{{ cert_domain }}.csr.{{ certificate_authority_cert_format }}"
+  register: csr
+
+- name: Generate Signing request
+  become: true
+  when: not csr.stat.exists
+  ansible.builtin.shell: >-
+    sudo -u {{ certificate_authority_user }}
+    openssl req -config {{ certificate_authority_intermediate_path }}/openssl-intermediate.cnf
+    -key {{ certificate_authority_intermediate_path }}/private/{{ cert_domain }}.key.{{ certificate_authority_cert_format }}
+    -subj "{{ subject }}"
+    -addext "subjectAltName=DNS:{{ cert_domain }}"
+    -new
+    -out {{ certificate_authority_intermediate_path }}/csr/{{ cert_domain }}.csr.{{ certificate_authority_cert_format }}
+
+- name: Generate some randomness for the Cert
+  become: true
+  ansible.builtin.shell: >-
+    sudo -u {{ certificate_authority_user }} 
+    openssl rand -hex {{ certificate_authority_serial_number_length }}
+    > {{ certificate_authority_intermediate_path }}/serial
+
+- name: Check whether cert present
+  become: true
+  ansible.builtin.stat:
+    path: "{{ certificate_authority_intermediate_path }}/certs/{{ cert_domain }}.cert.{{ certificate_authority_cert_format }}"
+  register: cert
+
+- name: Generate certificate
+  become: true
+  when: not cert.stat.exists
+  ansible.builtin.shell: >-
+    sudo OPENSSLPW={{ certificate_authority_intermediate_password }} -u {{ certificate_authority_user }} 
+    openssl ca -batch -config {{ certificate_authority_intermediate_path }}/openssl-intermediate.cnf
+    -passin env:OPENSSLPW
+    -days {{ certificate_authority_server_cert_duration_days }} 
+    -extensions server_cert -notext
+    -out {{ certificate_authority_intermediate_path }}/certs/{{ cert_domain }}.cert.{{ certificate_authority_cert_format }}
+    -infiles {{ certificate_authority_intermediate_path }}/csr/{{ cert_domain }}.csr.{{ certificate_authority_cert_format }}
+
+# TODO Copy this to someone more secure. There is a chance of interception
+- name: Download certs to Ansible controller
+  become: true
+  ansible.builtin.fetch:
+    flat: true
+    src: "{{ generated_certificate.src }}"
+    dest: "/tmp/{{ generated_certificate.dest }}"
+  with_items:
+    - { src: "{{ certificate_authority_intermediate_path }}/private/{{ cert_domain }}.key.{{ certificate_authority_cert_format }}", dest: "{{ cert_domain }}.key.{{ certificate_authority_cert_format }}" }
+    - { src: "{{ certificate_authority_intermediate_path }}/certs/{{ cert_domain }}.cert.{{ certificate_authority_cert_format }}", dest: "{{ cert_domain }}.cert.{{ certificate_authority_cert_format }}" }
+  loop_control:
+    loop_var: generated_certificate

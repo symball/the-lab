@@ -1,0 +1,47 @@
+server {
+  listen 80;
+  server_name {{ jenkins_domain }};
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 http2;
+  server_name {{ jenkins_domain }};
+  client_max_body_size 100M;
+  error_log {{ common_log_path }}/nginx-jenkins-error.log;
+  access_log {{ common_log_path }}/nginx-jenkins-access.log;
+
+  ssl on;
+  ssl_certificate {{ common_working_path }}/sec/{{ jenkins_domain }}.crt;
+  ssl_certificate_key {{ common_working_path }}/sec/{{ jenkins_domain }}.key;
+  ssl_prefer_server_ciphers on;
+  ssl_session_timeout 1d;
+  ssl_session_cache shared:SSL:50m;
+  ssl_session_tickets off;
+  ssl_dhparam {{ common_working_path }}/sec/dhparam.pem;
+
+  location = /error.html {
+    ssi on;
+    internal;
+    root {{ common_working_path }}/nginx-fallback;
+  }
+
+  location / {
+
+    proxy_set_header HOST $host:$server_port;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_pass http://127.0.0.1:8080;
+    proxy_read_timeout  90;
+
+    proxy_redirect http://127.0.0.1:8080 $scheme://{{ jenkins_domain }};
+
+    # Required for new HTTP-based CLI
+    proxy_http_version 1.1;
+    proxy_request_buffering off;
+    # workaround for https://issues.jenkins-ci.org/browse/JENKINS-45651
+    add_header 'X-SSH-Endpoint' '{{ jenkins_domain }}:50022' always;
+  }
+}

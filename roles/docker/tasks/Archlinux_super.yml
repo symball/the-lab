@@ -1,0 +1,39 @@
+---
+- name: Archlinux_docker | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ docker_arch_packages }}"
+
+- name: Archlinux_docker | Add the user to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_ssh_user }}"
+    groups: docker
+    append: true
+
+- name: Create folder for Docker config
+  file:
+    path: "{{ ansible_env.HOME }}/.docker"
+    state: directory
+    mode: "0760"
+
+- name: Copy across the initial docker config telling it to use pass as credential store
+  ansible.builtin.copy:
+    src: "docker-config.json"
+    dest: "{{ ansible_env.HOME }}/.docker/config.json"
+
+- name: Archlinux_docker | Enable and start daemon
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: docker
+
+- name: Install credential helper to keep registry logins secure
+  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
+  vars:
+    aur_packages:
+      - docker-credential-pass
+
+
+

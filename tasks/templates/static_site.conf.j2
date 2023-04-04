@@ -1,0 +1,54 @@
+server {
+  listen 80;
+  server_name {{ domain }};
+
+  location / {
+    return 301 https://$host$request_uri;
+  }
+
+  {% if letsencrypt %}
+  location ~ /\.well-known/acme-challenge/ {
+      allow all;
+      root {{ common_working_path }}/letsencrypt;
+      try_files $uri =404;
+      break;
+  }
+  {% endif %}
+}
+
+server {
+    listen 443 ssl;
+    server_name {{ domain }};
+    charset utf-8;
+    error_log {{ common_log_path }}/nginx-{{ domain }}-error.log;
+    access_log {{ common_log_path }}/nginx-{{ domain }}-access.log;
+
+    ssl_protocols {{ nginx_ssl_protocols }};
+    ssl_ciphers {{ nginx_ssl_ciphers }};
+    ssl_prefer_server_ciphers on;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    ssl_dhparam {{ common_working_path }}/sec/dhparam.pem;
+
+    ssl_certificate {{ common_working_path }}/sec/{{ domain }}full.pem;
+    ssl_certificate_key {{ common_working_path }}/sec/{{ domain }}priv.pem;
+
+    {% if letsencrypt %}
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    ## verify chain of trust of OCSP response using Root CA and Intermediate certs
+    ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    {% endif %}
+
+    location = /error.html {
+      ssi on;
+      internal;
+      root {{ common_working_path }}/nginx-fallback;
+    }
+
+    location / {
+      root   {{ common_working_path }}/{{ domain }};
+      index  index.html index.htm;
+    }
+}

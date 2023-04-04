@@ -1,0 +1,6 @@
+- name: "Creating state signal file: {{ signal }}"
+  become: true
+  ansible.builtin.file:
+    state: touch
+    path: "{{ remote_state_path }}/{{ signal }}"
+    mode: 0666

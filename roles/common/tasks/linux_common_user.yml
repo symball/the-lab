@@ -1,0 +1,82 @@
+- name: "Create User group {{ common_group }}"
+  become: True
+  group:
+    name: "{{ common_group }}"
+    state: present
+
+- name: "Create User a common {{ common_user }}"
+  become: True
+  user:
+    name: "{{ common_user }}"
+    state: present
+    shell: /bin/bash
+    groups: "{{ common_user }}"
+
+- name: Create path for storing state
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ remote_state_path }}"
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    mode: "0666"
+
+- name: Create SSH path with proper permissions
+  become: True
+  file:
+    path: "{{ common_user_home }}/.ssh"
+    state: directory
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    mode: "0700"
+
+- name: "Check if local SSH key exists"
+  stat:
+    path: "{{ common_user_key_location }}"
+  register: SSH_KEY_EXISTS
+  delegate_to: localhost
+
+- name: Authorize the public key from file
+  become: true
+  when:
+    - common_user_key_type == "file"
+    - SSH_KEY_EXISTS.stat.exists
+  ansible.posix.authorized_key:
+    user: "{{ common_user }}"
+    state: present
+    key: "{{ lookup('file', common_user_key_location) }}"
+
+- name: Authorize the public key from URL
+  when:
+    - common_user_key_type == "url"
+  ansible.posix.authorized_key:
+    user: "{{ common_user }}"
+    state: present
+    key: "{{ lookup('url', common_user_key_location) }}"
+
+- name: Enforce ownership of authorized keys file
+  become: True
+  file:
+    path: "{{ common_user_home }}/.ssh"
+    state: directory
+    owner: "{{ common_user }}"
+    group: "{{ common_group }}"
+    mode: "0600"
+
+- name: Check whether GPG keyring has been setup
+  become: True
+  ansible.builtin.shell: >
+    sudo -u {{ common_user }} gpg --list-keys | grep -q {{ common_user }}-ansible; echo $?
+  register: GPG_KEY_SETUP
+
+- name: Create a GPG keyring ansible use
+  when: GPG_KEY_SETUP.stdout == "1"
+  become: True
+  ansible.builtin.shell: >
+    sudo -u {{ common_user }} gpg --batch --passphrase '' --quick-gen-key {{ common_user }}-ansible default default
+
+- name: Initiate pass to ansible
+  when: GPG_KEY_SETUP.stdout == "1"
+  become: True
+  ansible.builtin.shell: >
+    sudo -u {{ common_user }} pass init {{ common_user }}-ansible

@@ -1,0 +1,99 @@
+---
+forgejo_arch_linux_packages:
+  - forgejo
+
+# Used for Debian based distributions because we need to direct download it
+forgejo_version: 1.18.5-0
+forgejo_gpg_key_id: EB114F5E6C0DC2BCDD183550A4B61A2DC5923710
+
+forgejo_system_user: forgejo
+forgejo_system_user_home_path: "/home/{{ forgejo_system_user }}"
+forgejo_system_group: "{{ forgejo_system_user }}"
+forgejo_system_path: /var/lib/forgejo
+
+forgejo_http_port: 3000
+forgejo_install_disabled: "true"
+forgejo_app_name: Symbolic Repository
+forgejo_run_mode: prod
+# forgejo will run behind a reverse proxy by default so, we use http
+forgejo_proxy_protocol: "true"
+forgejo_protocol: http
+forgejo_landing_page: home
+forgejo_lfs_start_server: "true"
+forgejo_ssh_port: 22
+forgejo_offline_mode: "false"
+
+forgejo_db_type: postgres
+forgejo_db_user: "{{ forgejo_system_user }}"
+forgejo_db_pass: development
+forgejo_db_ssl_mode: "disable"
+forgejo_db_charset: utf8
+forgejo_db_log_sql: "false"
+forgejo_db_path: "{{ forgejo_system_path }}/data/forgejo.db"
+
+forgejo_api_swagger_enable: "false"
+
+forgejo_log_access_enable: "false"
+forgejo_log_router_disable: "false"
+forgejo_log_router_level: console
+forgejo_log_level: Info
+forgejo_log_mode: console
+forgejo_log_path: "{{ forgejo_system_path }}/log"
+
+forgejo_mailer_enabled: "false"
+forgejo_mailer_prefix: ""
+forgejo_mailer_protocol: "sendmail"
+forgejo_mailer_smtp_address: ""
+forgejo_mailer_stmp_port: 587
+
+forgejo_oauth2_enabled: "true"
+forgejo_oauth2_jwt_signing_algorithm: RS256
+
+forgejo_openid_signin_enabled: "true"
+forgejo_openid_registration_enabled: "true"
+
+forgejo_project_default_kanban_type: "To Do, In Progress, Done"
+forgejo_project_default_bug_triage: "Needs Triage, High Priority, Low Priority, Closed"
+
+forgejo_security_disable_webhooks: "false"
+forgejo_security_password_complexity: "off"
+forgejo_security_password_hash_algorithm: "pbkdf2$50000$50"
+
+forgejo_session_cookie_name: forgejo_simonball
+forgejo_session_provider: memory
+forgejo_session_provider_config: ''
+
+forgejo_pull_request_comment_issue_close_keywords: "close,closes,closed,fix,fixes,fixed,resolve,resolves,resolved"
+forgejo_pull_request_comment_issue_reopen_keywords: "reopen,reopens,reopened"
+forgejo_pull_request_default_merge_strategy: rebase
+forgejo_pull_request_wip_prefix: "WIP:,[WIP]"
+
+forgejo_repository_default_trust_model: "committer"
+forgejo_repository_default_units: repo.code,repo.releases,repo.issues,repo.pulls,repo.wiki,repo.projects,repo.packages
+forgejo_repository_default_branch: main
+forgejo_repository_disable_download_archive: "false"
+forgejo_repository_root: "{{ forgejo_system_path }}/data/forgejo-repositories"
+forgejo_repository_script_type: bash
+
+# Service (forgejo features) options
+forgejo_auto_watch_new_repos: "true"
+forgejo_service_time_tracking_enabled: "true"
+forgejo_service_time_tracking_default_enabled: "true"
+forgejo_service_allow_organization_create: "true"
+forgejo_service_keep_email_private: "false"
+forgejo_service_register_captcha_enabled: "false"
+forgejo_service_login_captcha_enabled: "false"
+forgejo_service_mail_notification: "false"
+forgejo_service_register_disable: "false"
+forgejo_service_register_email_confirm: "false"
+forgejo_service_register_manual_confirm: "false"
+forgejo_service_signin_view: "false"
+#
+# Secrets - The following are included for reference only but, 100% should be
+#           included in a Vault
+#
+# A 32 character URL safe string. If empty, forgejo will auto-generate
+# dd if=/dev/urandom bs=1 count=32 status=none | base64 | tr '/+' '_-' | tr -d '='
+forgejo_lfs_jwt_secret: ''
+forgejo_security_internal_token: ''
+forgejo_security_secret_key: ''

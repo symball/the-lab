@@ -1,0 +1,7 @@
+- name: "Install Node version requested: {{ nvm_node_lts_version }}"
+  become: True
+  args:
+    executable: /usr/bin/bash
+  shell: >
+    nvm install {{ nvm_node_lts_version }} && \
+    nvm alias default lts/{{ nvm_node_lts_version }}

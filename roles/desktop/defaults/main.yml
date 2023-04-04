@@ -1,0 +1,48 @@
+---
+desktop_use_intellij: false
+
+desktop_arch_packages:
+  - ark
+  - dolphin
+  - dolphin-plugins
+  - filelight
+  - firefox
+  - kdialog
+  - kompare
+  - okular
+  - sddm
+  - sddm-kcm
+  - xorg-server
+desktop_arch_aur_packages:
+  - ttf-meslo-nerd-font-powerlevel10k
+  - ttf-ms-fonts
+desktop_arch_nvidia_packages:
+  - nvidia
+  - nvidia-settings
+  - nvidia-utils
+desktop_arch_font_packages:
+  - ttf-caladea
+  - ttf-carlito
+  - ttf-dejavu
+  - ttf-liberation
+  - ttf-linux-libertine-g
+  - noto-fonts
+  - adobe-source-code-pro-fonts
+  - adobe-source-sans-fonts
+  - adobe-source-serif-fonts
+
+desktop_debian_22_packages:
+  - ark
+  - filelight
+  - kde-plasma-desktop
+  - kompare
+  - okkular
+
+desktop_windows_chocolatey_packages:
+  - firefox
+desktop_windows_chocolatey_font_packages:
+  - dejavufonts
+  - firecode
+  - opensans
+  - robotofonts
+  - sourcecodepro 

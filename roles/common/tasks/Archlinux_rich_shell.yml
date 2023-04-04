@@ -1,0 +1,34 @@
+---
+- name: Archlinux_rich_shell | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ common_arch_rich_shell_packages }}"
+    update_cache: true
+
+- name: Archlinux_rich_shell | Ensure .zsh files in home path
+  ansible.builtin.file:
+    state: touch
+    path: "{{ ansible_env.HOME }}/.{{ zsh_file }}"
+    mode: "0644"
+  loop:
+    - zshrc
+    - zshenv
+  loop_control:
+    loop_var: zsh_file
+
+- name: Archlinux_rich_shell | Copy config files
+  ansible.builtin.copy:
+    src: "{{ config_file }}"
+    dest: "{{ ansible_env.HOME }}/.{{ config_file }}"
+    mode: "0644"
+  loop:
+    - p10k.zsh
+    - terminal_config.zsh
+  loop_control:
+    loop_var: config_file
+
+- name: Archlinux_rich_shell | Add extra source to terminal startup
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    block: "[[ ! -f ~/.terminal_config.zsh ]] || source ~/.terminal_config.zsh"
+    marker: "# {mark} ANSIBLE RICH_SHELL SETTINGS"
