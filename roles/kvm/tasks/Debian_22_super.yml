@@ -24,6 +24,13 @@
     groups: libvirt
     append: true
 
+- name: Set security provider for QEMU to work with libvirt
+  become: true
+  ansible.builtin.blockinfile:
+    dest: /etc/libvirt/qemu.conf
+    marker: "# {mark} ANSIBLE SECURITY PROVIDER"
+    block: 'security_driver = "none"'
+
 - name: super | Make sure libvirt daemon is enabled and running
   become: true
   ansible.builtin.systemd:

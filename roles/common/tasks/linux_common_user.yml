@@ -12,6 +12,13 @@
     shell: /bin/bash
     groups: "{{ common_user }}"
 
+- name: Have Bash pickup login shell environment
+  become: true
+  ansible.builtin.blockinfile:
+    path: "{{ common_user_home }}/.bashrc"
+    block: "if [ -f /etc/profile ]; then  . /etc/profile; fi"
+    marker: "# {mark} ANSIBLE BASH ENVIRONMENT"
+
 - name: Create path for storing state
   become: true
   ansible.builtin.file:

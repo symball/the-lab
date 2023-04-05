@@ -14,9 +14,14 @@
 - name: Archlinux_super | Make sure there is an http user
   become: true
   ansible.builtin.user:
-    name: "{{ common_user }}"
+    name: "{{ nvm_user }}"
     groups: "{{ nvm_debian_group }}"
     append: true
+  loop:
+    - "{{ common_user }}"
+    - "{{ ansible_user }}"
+  loop_control:
+    loop_var: nvm_user
 
 - name: Make nvm group own path and give group the same rights
   become: true
