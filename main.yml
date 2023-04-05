@@ -21,17 +21,17 @@
       file:
         path: ansible_working_path
         state: directory
-# #
-# # Common
-# #
-# - name: Import common role
-#   hosts: all
-#   tags: [common]
-#   tasks:
-#     - name: Perform some common tasks
-#       ansible.builtin.import_role:
-#         name: common
-#       when: include_common_management
+#
+# Common
+#
+- name: Import common role
+  hosts: all
+  tags: [common]
+  tasks:
+    - name: Perform some common tasks
+      ansible.builtin.import_role:
+        name: common
+      when: include_common_management
 #
 # Desktop
 #
@@ -54,97 +54,97 @@
       ansible.builtin.import_role:
         name: kvm
       when: include_kvm_management
-# #
-# # Certificate Authority
-# #
-# - name: Import Certificate Authority role
-#   hosts: certificate_authority
-#   tags: [certificate_authority]
-#   tasks:
-#     - name: Include Certificate Authority managed
-#       ansible.builtin.import_role:
-#         name: certificate_authority
-#       when: include_certificate_authority_management
-# - name: Distribute the CA chain cert
-#   hosts: all
-#   tasks:
-#     - name: Debug
-#       debug:
-#         msg: "include_certificate_authority_management = {{ include_certificate_authority_management }}"
-#     - name: Start Cert distribution
-#       when:
-#         - include_certificate_authority_management
-#         - certificate_authority_trust_chain
-#       ansible.builtin.import_tasks:
-#         tasks/certificate_authority_trust_chain.yml
+#
+# Certificate Authority
+#
+- name: Import Certificate Authority role
+  hosts: certificate_authority
+  tags: [certificate_authority]
+  tasks:
+    - name: Include Certificate Authority managed
+      ansible.builtin.import_role:
+        name: certificate_authority
+      when: include_certificate_authority_management
+- name: Distribute the CA chain cert
+  hosts: all
+  tasks:
+    - name: Debug
+      debug:
+        msg: "include_certificate_authority_management = {{ include_certificate_authority_management }}"
+    - name: Start Cert distribution
+      when:
+        - include_certificate_authority_management
+        - certificate_authority_trust_chain
+      ansible.builtin.import_tasks:
+        tasks/certificate_authority_trust_chain.yml
 
-# #
-# # Docker
-# #
-# - name: Import docker role
-#   hosts: docker
-#   tags: [docker]
-#   tasks:
-#     - name: Include docker management
-#       ansible.builtin.import_role:
-#         name: docker
-#       when: include_docker_management
-# #
-# # Go
-# #
-# - name: Import Go role
-#   hosts: go
-#   tags: [go]
-#   tasks:
-#     - name: Include go management
-#       ansible.builtin.import_role:
-#         name: go
-#       when: include_go_management
+#
+# Docker
+#
+- name: Import docker role
+  hosts: docker
+  tags: [docker]
+  tasks:
+    - name: Include docker management
+      ansible.builtin.import_role:
+        name: docker
+      when: include_docker_management
+#
+# Go
+#
+- name: Import Go role
+  hosts: go
+  tags: [go]
+  tasks:
+    - name: Include go management
+      ansible.builtin.import_role:
+        name: go
+      when: include_go_management
 
-# #
-# # MariaDB
-# #
-# - name: Import MariaDB role
-#   hosts: mariadb
-#   tags: [mariadb]
-#   tasks:
-#     - name: Include mariadb management
-#       ansible.builtin.import_role:
-#         name: mariadb
-#       when: include_mariadb_management
-# #
-# # Nginx
-# #
-# - name: Import Nginx role
-#   hosts: nginx
-#   tags: [nginx]
-#   tasks:
-#     - name: Include nginx management
-#       ansible.builtin.import_role:
-#         name: nginx
-#       when: include_nginx_management
-# #
-# # NVM
-# #
-# - name: Import NVM role
-#   hosts: nvm
-#   tags: [nvm]
-#   tasks:
-#     - name: Include nvm management
-#       ansible.builtin.import_role:
-#         name: nvm
-#       when: include_nvm_management
-# #
-# # PostgreSQL
-# #
-# - name: Import PostgreSQL role
-#   hosts: postgresql
-#   tags: [postgresql]
-#   tasks:
-#     - name: Include postgresql management
-#       ansible.builtin.import_role:
-#         name: postgresql
-#       when: include_postgresql_management
+#
+# MariaDB
+#
+- name: Import MariaDB role
+  hosts: mariadb
+  tags: [mariadb]
+  tasks:
+    - name: Include mariadb management
+      ansible.builtin.import_role:
+        name: mariadb
+      when: include_mariadb_management
+#
+# Nginx
+#
+- name: Import Nginx role
+  hosts: nginx
+  tags: [nginx]
+  tasks:
+    - name: Include nginx management
+      ansible.builtin.import_role:
+        name: nginx
+      when: include_nginx_management
+#
+# NVM
+#
+- name: Import NVM role
+  hosts: nvm
+  tags: [nvm]
+  tasks:
+    - name: Include nvm management
+      ansible.builtin.import_role:
+        name: nvm
+      when: include_nvm_management
+#
+# PostgreSQL
+#
+- name: Import PostgreSQL role
+  hosts: postgresql
+  tags: [postgresql]
+  tasks:
+    - name: Include postgresql management
+      ansible.builtin.import_role:
+        name: postgresql
+      when: include_postgresql_management
 #
 # Terraform
 #
@@ -162,44 +162,44 @@
 #
 # Docker Container Registry
 #
-# - name: Import Docker Container Registry role
-#   hosts: docker_container_registry
-#   tags: [docker_container_registry]
-#   tasks:
-#     - name: Include docker_container_registry management
-#       ansible.builtin.import_role:
-#         name: docker_container_registry
-#       when: include_docker_container_registry_management
-# #
-# # Home Assistant
-# #
-# - name: Import Home automation role
-#   hosts: home_assistant
-#   tags: [home_assistant]
-#   tasks:
-#     - name: Include home_assistant management
-#       ansible.builtin.import_role:
-#         name: home_assistant
-#       when: include_home_assistant_management
-# #
-# # Home Assistant
-# #
-# - name: Import forgejo role
-#   hosts: forgejo
-#   tags: [ forgejo ]
-#   tasks:
-#     - name: Include forgejo management
-#       ansible.builtin.import_role:
-#         name: forgejo
-#       when: include_forgejo_management
-# #
-# # Jenkins
-# #
-# - name: Import Jenkins role
-#   hosts: jenkins
-#   tags: [ jenkins ]
-#   tasks:
-#     - name: Include jenkins management
-#       ansible.builtin.import_role:
-#         name: jenkins
-#       when: include_jenkins_management
+- name: Import Docker Container Registry role
+  hosts: docker_container_registry
+  tags: [docker_container_registry]
+  tasks:
+    - name: Include docker_container_registry management
+      ansible.builtin.import_role:
+        name: docker_container_registry
+      when: include_docker_container_registry_management
+#
+# Home Assistant
+#
+- name: Import Home automation role
+  hosts: home_assistant
+  tags: [home_assistant]
+  tasks:
+    - name: Include home_assistant management
+      ansible.builtin.import_role:
+        name: home_assistant
+      when: include_home_assistant_management
+#
+# Home Assistant
+#
+- name: Import forgejo role
+  hosts: forgejo
+  tags: [ forgejo ]
+  tasks:
+    - name: Include forgejo management
+      ansible.builtin.import_role:
+        name: forgejo
+      when: include_forgejo_management
+#
+# Jenkins
+#
+- name: Import Jenkins role
+  hosts: jenkins
+  tags: [ jenkins ]
+  tasks:
+    - name: Include jenkins management
+      ansible.builtin.import_role:
+        name: jenkins
+      when: include_jenkins_management

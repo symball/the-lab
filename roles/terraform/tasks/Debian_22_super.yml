@@ -19,5 +19,5 @@
 - name: Debian_terraform | Install
   become: true
   ansible.builtin.apt:
-    name: terraform
+    name: "{{ terraform_debian_22_packages }}"
     update_cache: yes

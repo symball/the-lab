@@ -293,4 +293,4 @@ echo "${red}If you are planning to use the deployed services in production!${res
 echo "Don't forget to also customize your variables and create secrets!"
 echo "See README.md for more information"
 echo ""
-echo "Once ready, run ansible-playbook -i ./inventory.yml"
+echo "Once ready, run ansible-playbook -i ./inventory.yml main.yml"

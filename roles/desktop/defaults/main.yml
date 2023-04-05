@@ -36,7 +36,7 @@ desktop_debian_22_packages:
   - filelight
   - kde-plasma-desktop
   - kompare
-  - okkular
+  - okular
 
 desktop_windows_chocolatey_packages:
   - firefox
