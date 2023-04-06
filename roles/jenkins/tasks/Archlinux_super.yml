@@ -8,27 +8,17 @@
     app_port: "{{ jenkins_port }}"
     letsencrypt: "{{ nginx_facade_use_certbot }}"
 
-- name: Add Jenkins apt repository key.
-  become: true
-  ansible.builtin.apt_key:
-    url: https://pkg.jenkins.io/debian-stable/jenkins.io.key
-
-- name: Add Jenkins Stable repository
-  become: true
-  ansible.builtin.apt_repository:
-    repo: deb https://pkg.jenkins.io/debian-stable binary/
-    state: present
-
-- name: Make sure Java installed before trying Jenkins
+- name: Install
   become: True
-  apt:
-    update_cache: yes
-    name: "{{ jenkins_debian_java_package }}"
+  community.general.pacman:
+    name: "{{ jenkins_arch_packages }}"
 
-- name: Install Jenkins
-  become: true
-  ansible.builtin.apt:
-    name: jenkins
+
+- name: Create config
+  become: True
+  ansible.builtin.template:
+    src: Archlinux_conf.d_jenkins.j2
+    dest: /etc/conf.d/jenkins
 
 - name: Add jenkins to the docker group
   when: "'docker' in group_names"

@@ -30,10 +30,15 @@ all:
   # Role Assignment
   #
   children:
+    ansible_controller:
+      hosts:
     certificate_authority:
       hosts:
         {{#ARCH_VMS}}virt-arch-0{{/ARCH_VMS}}{{^ARCH_VMS}}{{#DEBIAN_VMS}}virt-debian-0{{/DEBIAN_VMS}}{{^DEBIAN_VMS}}virt-ubu-0{{/DEBIAN_VMS}}{{/ARCH_VMS}}:
     desktop:
+      hosts:
+        {{ HOSTNAME }}:
+    developer:
       hosts:
         {{ HOSTNAME }}:
     docker:
@@ -50,6 +55,7 @@ all:
       hosts:
     kvm:
       hosts:
+        {{ HOSTNAME }}:
     mariadb:
       hosts:
     nginx:
@@ -61,4 +67,17 @@ all:
     nvm:
       hosts:
     postgresql:
+      hosts:
+    python:
+      hosts:
+    rabbitmq:
+      hosts:
+    redis:
+      hosts:
+    terraform:
+      hosts:
+        {{ HOSTNAME }}:
+    vagrant:
+      hosts:
+    virtualbox:
       hosts:

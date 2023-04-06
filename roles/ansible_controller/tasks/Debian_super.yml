@@ -1,0 +1,10 @@
+- name: Add Ansible PPA repository
+  become: True
+  apt_repository:
+    repo: ppa:ansible/ansible
+
+- name: Install Ansible
+  become: True
+  apt:
+    name: "{{ ansible_controller_debian_packages }}"
+

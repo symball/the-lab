@@ -1,0 +1,9 @@
+ansible_controller_arch_packages:
+  - ansible
+  - python-docker
+  - python-mysql-connector
+
+ansible_controller_debian_packages:
+  - ansible
+  - python3-docker
+  - python3-mysqldb
