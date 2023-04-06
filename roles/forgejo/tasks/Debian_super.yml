@@ -1,8 +1,8 @@
 - set_fact:
     signal_forgejo_download: "forgejo_downloaded_v{{ forgejo_version }}"
-    db_host: "{{ hostvars[groups['postgresql'][0]]['inventory_hostname'] }}"
+    db_host: "{{ hostvars[groups['postgresql'][0]]['fqcdn'] }}"
     db_port: "{{ hostvars[groups['postgresql'][0]]['postgresql_port'] }}"
-    domain: "{{ forgejo_domain | default('git.' + inventory_hostname) }}"
+    domain: "{{ forgejo_domain | default(forgejo_reference + '.' + fqcdn) }}"
 
 - name: Add the GPG key for forgejo
   become: true
@@ -115,5 +115,5 @@
   become: true
   ansible.builtin.systemd:
     enabled: true
-    state: started
+    state: restarted
     name: forgejo

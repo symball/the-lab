@@ -1,15 +1,13 @@
-- name: Add Ansible PPA repository
-  become: True
-  apt_repository:
-    repo: ppa:ansible/ansible
-
-- name: Install Ansible
-  become: True
-  apt:
-    update_cache: yes
-    name: "{{ packages }}"
-  vars:
-    packages:
-      - ansible
-      - python3-docker
-      - python3-mysqldb
+---
+# The file is split like this for variable merging from role
+- name: ansible_controller | Super
+  when: is_super | bool
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}_super.yml"
+        - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_super.yml"
+        - "{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
+        - "{{ ansible_os_family }}_super.yml"
+      skip: True

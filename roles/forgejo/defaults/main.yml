@@ -2,6 +2,8 @@
 forgejo_arch_linux_packages:
   - forgejo
 
+forgejo_reference: git
+
 # Used for Debian based distributions because we need to direct download it
 forgejo_version: 1.18.5-0
 forgejo_gpg_key_id: EB114F5E6C0DC2BCDD183550A4B61A2DC5923710

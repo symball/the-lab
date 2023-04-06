@@ -1,0 +1,5 @@
+---
+- name: ansible_controller | Install common
+  become: true
+  community.general.pacman:
+    name: "{{ ansible_controller_arch_packages }}"

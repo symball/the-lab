@@ -1,13 +1,19 @@
+postgres_arch_packages:
+  - postgresql
+
 postgres_debian_packages:
   - postgresql
   - postgresql-client
   - postgresql-contrib
 
 postgresql_port: 5432
+postgresql_user: postgres
 postgresql_listen_address: '*'
 postgresql_version: 14
 postgresql_socket_path: "/var/run/postgresql"
-postgresql_data_path: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_root_path: "/var/lib/postgresql/{{ postgresql_version }}"
+postgresql_config_path: "{{ postgresql_root_path }}/main"
+postgresql_data_path: "{{ postgresql_root_path }}/main"
 postgresql_pid_path: "/var/run/postgresql/{{ postgresql_version }}-main.pid"
 postgresql_max_connections: 100
 postgresql_password_encryption: scram-sha-256

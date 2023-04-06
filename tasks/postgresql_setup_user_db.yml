@@ -1,5 +1,6 @@
 - set_fact:
     postgresql_version: "{{ hostvars[host]['postgresql_version'] }}"
+    postgresql_config_path: "{{ hostvars[host]['postgresql_config_path'] }}"
     postgresql_password_encryption: "{{ hostvars[host]['postgresql_password_encryption'] }}"
     connect_from: "{{ allowed_from | default('0.0.0.0/0') }}"
     schema_name: "{{ schema | default(user_name) }}"
@@ -69,10 +70,18 @@
       sudo -u postgres psql -c 
       "GRANT ALL PRIVILEGES ON DATABASE {{ schema_name }} TO {{ user_name }}"
 
+- name: Make the user the DB owner
+  when: schema_exists == False
+  become: True
+  ansible.builtin.command:
+    cmd: >
+      sudo -u postgres psql -c 
+      "ALTER DATABASE {{ schema_name }} OWNER TO {{ user_name }}"
+
 - name: Create security rule for user
   become: True
   ansible.builtin.blockinfile:
-    path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    path: "{{ postgresql_config_path }}/pg_hba.conf"
     block: |
       host    {{ schema_name }}             {{ user_name }}      {{ connect_from }}               {{ postgresql_password_encryption }}"
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ schema_name }} security"
