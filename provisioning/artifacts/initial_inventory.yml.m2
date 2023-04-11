@@ -26,3 +26,6 @@ all:
     kvm:
       hosts:
         {{ HOSTNAME }}:
+    terraform:
+      hosts:
+        {{ HOSTNAME }}:

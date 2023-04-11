@@ -14,7 +14,7 @@
     # Auto confirm replace
     extra_args: --ask 4
 
-- name: super | Add the user to the libvity user group
+- name: super | Add the user to the libvirt user group
   become: true
   ansible.builtin.user:
     name: "{{ ansible_ssh_user }}"
@@ -27,3 +27,6 @@
     enabled: true
     state: started
     name: libvirtd
+
+- name: super | Create storage pool
+  ansible.builtin.import_tasks: create_storage_pool.yml

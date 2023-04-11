@@ -1,0 +1,5 @@
+---
+- name: terraform | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ terraform_arch_packages }}"

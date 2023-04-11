@@ -1,0 +1,29 @@
+- name: Check whether the storage pool has been defined
+  become: true
+  ansible.builtin.shell:
+    cmd: >
+      virsh pool-info {{ libvirt_storage_pool_name }} |
+      grep -q UUID; echo $?
+  args:
+    chdir: /tmp
+  register: libvirt_pool_exists
+
+- name: Define the storage pool
+  become: true
+  when: not libvirt_pool_exists.stdout == "0"
+  ansible.builtin.shell:
+    cmd: >
+      virsh pool-define-as 
+      {{ libvirt_storage_pool_name }} 
+      {{ libvirt_storage_pool_type }}
+      - - - - 
+      {{ libvirt_storage_pool_path }}
+
+- name: Build and start the storage pool
+  become: true
+  when: not libvirt_pool_exists.stdout == "0"
+  ansible.builtin.shell:
+    cmd: >
+      virsh pool-build {{ libvirt_storage_pool_name }} &&
+      virsh pool-start {{ libvirt_storage_pool_name }} &&
+      virsh pool-autostart {{ libvirt_storage_pool_name }}
