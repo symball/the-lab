@@ -21,5 +21,10 @@ qemu_debian_22_packages:
 
 qemu_debian_22_desktop_packages:
   - virt-manager
+
+libvirt_storage_pool_name: default
+libvirt_storage_pool_type: dir
+libvirt_storage_pool_path: /var/lib/libvirt/images
+
 network_bridge_interface: true
 network_bridge_name: br1

@@ -37,3 +37,6 @@
     enabled: true
     state: started
     name: libvirtd
+
+- name: super | Create storage pool
+  ansible.builtin.import_tasks: create_storage_pool.yml

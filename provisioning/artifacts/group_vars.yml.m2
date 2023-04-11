@@ -52,3 +52,4 @@ include_mariadb_management: true
 include_nginx_management: true
 include_nvm_management: true
 include_postgresql_management: true
+include_terraform_management: true

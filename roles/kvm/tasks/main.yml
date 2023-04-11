@@ -1,12 +1,13 @@
 ---
 # The file is split like this for variable merging from role
-- debug: msg="{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
-- name: common | Super
+- name: kvm | Super
   when: is_super | bool
   ansible.builtin.include_tasks:
     file: "{{ item }}"
   with_first_found:
     - files:
+        - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}_super.yml"
+        - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_super.yml"
         - "{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
         - "{{ ansible_os_family }}_super.yml"
       skip: True

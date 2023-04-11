@@ -26,6 +26,7 @@ desktop_arch_font_packages:
   - ttf-dejavu
   - ttf-liberation
   - ttf-linux-libertine-g
+  - ttf-roboto
   - noto-fonts
   - adobe-source-code-pro-fonts
   - adobe-source-sans-fonts
