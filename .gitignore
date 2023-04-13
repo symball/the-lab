@@ -2,6 +2,7 @@
 terraform.tfstate*
 inventory.yml
 cloud_init.cfg
+group_vars/all.yml
 # Logs
 logs
 *.log
