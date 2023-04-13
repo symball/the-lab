@@ -160,6 +160,9 @@ children:
   jenkins:
     hosts:
       virt-arch-0:
+  postgresql:
+    hosts:
+      virt-ubu-0:
 ```
 
 Now, go ahead and run `ansible-playbook -i ./inventory.yml main.yml`. It may take a while but, once finished, you should be able to visit:
@@ -172,3 +175,41 @@ Now, go ahead and run `ansible-playbook -i ./inventory.yml main.yml`. It may tak
 ```shell
 ssh -i $HOME/.ssh/thelab-master $(whoami)@virt-arch-0.com 'sudo cat /var/lib/jenkins/secrets/initialAdminPassword'
 ```
+
+## Controlling the workflow
+
+If you run the playbooks with a full inventory defined, every role will be run; this might be both time consuminng and tedious if you just want to make changes to a particular service.
+
+The way this repository has been created, there are a few ways to achieve this:
+
+### Using tags
+
+When you call Ansible from the command line, you can use the role name and the tags filter to limit plays which Ansible will even parse. For example, to only work with the `jenkins` role, we use the `--tags` argument and a comma separated list
+
+```shell
+ansible-playbook -i ./inventory.yml --tags "jenkins" main.yml
+```
+
+### Using the management variables
+
+For a more detailed explanation of how plays are chosen, refer to the [architecture](./docs/architecture.md) page.
+
+Whilst the CLI method works well for simpler roles, because Jenkins has a dependency on the `certificate_authority` and `nginx` role, it will actually fail. A simpler way to restrict Ansible behaviour whilst still functioning correct is to make use of the `include_XXX_management` variables that by default are defined in `group_vars/all.yml`.
+
+```yaml
+role_management_enabled: true
+include_certificate_authority_management: "{{ role_management_enabled }}"
+...
+include_terraform_management: "{{ role_management_enabled }}"
+```
+
+From the above snippet, there is a boolean condition `role_management_enabled` that will be applied to all roles by default which is true by default. This value could be set to false at any level, either in the *group_vars* or on an individual device in the *inventory*.
+
+For our case where we want to target just the Jenkins role, assuming Nginx and the certificate authority have been setup in advance, you would set `role_management_enabled` to `false` (which in effect means running Ansible won't change anything) and either:
+
+* Change `include_jenkins_management` to `true`
+* Or when calling `ansible-playbook` use the `extra-vars` argument and set Jenkins management to true. e.g. `ansible-playbook -i ./inventory.yml --extra-vars "include_jenkins_management=true" main.yml`
+
+## TODO
+
+* [ ] - PostgreSQL role. When SSL on, create key using CA

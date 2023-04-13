@@ -1,14 +1,40 @@
 ---
+- name: Set Debian 11 specific facts
+  when:
+    - ansible_os_family == "Debian"
+    - ansible_distribution_major_version == "11"
+  set_fact:
+    postgresql_config_path: "{{ postgresql_debian_11_config_path }}"
+    postgresql_root_path: "{{ postgresql_debian_11_root_path }}"
+    postgresql_version: "{{ postgresql_debian_11_version }}"
+
+- name: Set Debian 22 specific facts
+  when:
+    - ansible_os_family == "Debian"
+    - ansible_distribution_major_version == "22"
+  set_fact:
+    postgresql_config_path: "{{ postgresql_debian_22_config_path }}"
+    postgresql_root_path: "{{ postgresql_debian_22_root_path }}"
+    postgresql_version: "{{ postgresql_debian_22_version }}"
+
 - name: Set some variables as facts for use outside role
   set_fact:
-    postgresql_config_path: "{{ postgresql_config_path }}"
     postgresql_password_encryption: "{{ postgresql_password_encryption }}"
-    postgresql_version: "{{ postgresql_version }}"
     postgresql_port: "{{ postgresql_port }}"
+
+- name: Set Arch Linux specific facts
+  when:
+    - ansible_os_family == "Archlinux"
+  set_fact:
+    postgresql_config_path: "{{ postgresql_arch_config_path }}"
+    postgresql_root_path: "{{ postgresql_arch_root_path }}"
+    postgresql_version: "{{ postgresql_arch_version }}"
 
 # The file is split like this for variable merging from role
 - name: postgresql | Super
-  when: is_super | bool
+  when:
+    - is_super | bool
+    - include_postgresql_management
   ansible.builtin.include_tasks:
     file: "{{ item }}"
   with_first_found:

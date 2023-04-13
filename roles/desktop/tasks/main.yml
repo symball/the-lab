@@ -1,6 +1,8 @@
 ---
 - name: desktop | Super
-  when: is_super | bool
+  when:
+    - is_super | bool
+    - include_desktop_management
   ansible.builtin.include_tasks:
     file: "{{ item }}"
   with_first_found:
@@ -10,3 +12,5 @@
         - "{{ ansible_os_family }}_{{ ansible_architecture }}_super.yml"
         - "{{ ansible_os_family }}_super.yml"
       skip: True
+
+

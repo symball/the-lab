@@ -1,4 +1,14 @@
-# The file is split like this for variable merging from role
-- name: Redis Super
-  when: is_super == True
-  import_tasks: ./super.yml
+---
+- name: redis | Super
+  when:
+    - is_super | bool
+    - include_redis_management
+  ansible.builtin.include_tasks:
+    file: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}_super.yml"
+        - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}_super.yml"
+        - "{{ ansible_os_famaily }}_{{ ansible_architecture }}_super.yml"
+        - "{{ ansible_os_family }}_super.yml"
+      skip: True

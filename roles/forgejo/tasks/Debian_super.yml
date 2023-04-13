@@ -51,7 +51,7 @@
     remote_src: true
     mode: '0555'
     src: "/tmp/forgejo-{{ forgejo_version }}-linux-amd64"
-    dest: /usr/local/bin/forgejo
+    dest: /usr/bin/forgejo
 
 - name: Create forgejo group
   become: True

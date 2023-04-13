@@ -1,7 +1,9 @@
 ---
 # The file is split like this for variable merging from role
 - name: kvm | Super
-  when: is_super | bool
+  when:
+    - is_super | bool
+    - include_kvm_management
   ansible.builtin.include_tasks:
     file: "{{ item }}"
   with_first_found:

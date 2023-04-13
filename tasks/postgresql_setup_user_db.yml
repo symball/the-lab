@@ -1,5 +1,4 @@
 - set_fact:
-    postgresql_version: "{{ hostvars[host]['postgresql_version'] }}"
     postgresql_config_path: "{{ hostvars[host]['postgresql_config_path'] }}"
     postgresql_password_encryption: "{{ hostvars[host]['postgresql_password_encryption'] }}"
     connect_from: "{{ allowed_from | default('0.0.0.0/0') }}"

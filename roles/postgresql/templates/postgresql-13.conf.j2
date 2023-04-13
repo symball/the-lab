@@ -39,7 +39,7 @@
 # The default values of these variables are driven from the -D command-line
 # option or PGDATA environment variable, represented here as ConfigDir.
 
-data_directory = '{{ postgresql_data_path }}'          # use data in another directory
+data_directory = '{{ postgresql_root_path }}'          # use data in another directory
                                         # (change requires restart)
 hba_file = '{{ postgresql_config_path }}/pg_hba.conf'        # host-based authentication file
                                         # (change requires restart)
@@ -47,7 +47,7 @@ ident_file = '{{ postgresql_config_path }}/pg_ident.conf'    # ident configurati
                                         # (change requires restart)
 
 # If external_pid_file is not explicitly set, no extra PID file is written.
-external_pid_file = '{{ postgresql_pid_path }}'                   # write an extra PID file
+external_pid_file = '{{ postgresql_socket_path }}/{{ postgresql_version }}-main.pid'                   # write an extra PID file
                                         # (change requires restart)
 
 
@@ -102,12 +102,12 @@ password_encryption = {{ postgresql_password_encryption }}    # scram-sha-256 or
 
 # - SSL -
 
-#ssl = on
+ssl = on
 #ssl_ca_file = ''
-#ssl_cert_file = '/etc/ssl/certs/ssl-cert-snakeoil.pem'
+ssl_cert_file = '/etc/ssl/certs/ssl-cert-snakeoil.pem'
 #ssl_crl_file = ''
 #ssl_crl_dir = ''
-#ssl_key_file = '/etc/ssl/private/ssl-cert-snakeoil.key'
+ssl_key_file = '/etc/ssl/private/ssl-cert-snakeoil.key'
 #ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL' # allowed SSL ciphers
 #ssl_prefer_server_ciphers = on
 #ssl_ecdh_curve = 'prime256v1'
@@ -601,7 +601,7 @@ cluster_name = '14/main'                        # added to process titles if non
 #track_io_timing = off
 #track_wal_io_timing = off
 #track_functions = none                 # none, pl, all
-#stats_temp_directory = '/var/run/postgresql/14-main.pg_stat_tmp'
+stats_temp_directory = '/var/run/postgresql/14-main.pg_stat_tmp'
 
 
 # - Monitoring -

@@ -1,0 +1,82 @@
+- set_fact:
+    db_host: "{{ hostvars[groups['postgresql'][0]].inventory_hostname_short }}"
+    db_host_fqcdn: "{{ hostvars[groups['postgresql'][0]].fqcdn }}"
+    db_port: "{{ hostvars[groups['postgresql'][0]].postgresql_port }}"
+    domain: "{{ forgejo_domain | default(forgejo_reference + '.' + fqcdn) }}"
+
+- name: Set DB Host when specifically defined
+  when: forgejo_db_host
+  set_fact:
+    db_host: "{{ hostvars[forgejo_db_host].inventory_hostname_short }}"
+    db_host_fqcdn: "{{ hostvars[forgejo_db_host].fqcdn }}"
+    db_port: "{{ hostvars[forgejo_db_host].postgresql_port }}"
+
+- name: Move the binary
+  become: true
+  community.general.pacman:
+    name: forgejo
+
+- name: Create forgejo group
+  become: True
+  group:
+    name: "{{ forgejo_system_group }}"
+    state: present
+
+- name: Create a forgejo user
+  become: true
+  ansible.builtin.user:
+    home: "{{ forgejo_system_user_home_path }}"
+    name: "{{ forgejo_system_user }}"
+    groups: "{{ forgejo_system_group }}"
+
+- name: Create the forgejo DB
+  delegate_to: "{{ db_host }}"
+  import_tasks: tasks/postgresql_setup_user_db.yml
+  vars:
+    user_name: "{{ forgejo_db_user }}"
+    user_pass: "{{ forgejo_db_pass }}"
+    host: "{{ db_host }}"
+
+- name: Create supporting paths
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ forgejo_folder }}"
+    owner: "{{ forgejo_system_user }}"
+    group: "{{ forgejo_system_group }}"
+  loop:
+    - "{{ forgejo_system_path }}/custom"
+    - "{{ forgejo_system_path }}/data"
+    - "{{ forgejo_system_path }}/log"
+    - /etc/forgejo
+  loop_control:
+    loop_var: forgejo_folder
+
+- name: Create a SystemD service
+  become: True
+  ansible.builtin.template:
+    src: systemd.service.j2
+    dest: /usr/lib/systemd/system/forgejo.service
+
+- name: Create config
+  become: True
+  ansible.builtin.template:
+    owner: "{{ forgejo_system_user }}"
+    group: "{{ forgejo_system_group }}"
+    src: app.ini.j2
+    dest: /etc/forgejo/app.ini
+
+- name: Create a reverse proxy service
+  import_tasks: tasks/nginx_reverse_proxy.yml
+  vars:
+    reference: "{{ role_name }}"
+    domain: "{{ domain }}"
+    letsencrypt: "{{ nginx_facade_use_certbot }}"
+    app_port: "{{ forgejo_http_port }}"
+
+- name: Enable and start the forgejo service
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: restarted
+    name: forgejo

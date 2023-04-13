@@ -11,15 +11,6 @@
     - "{{ docker_container_registry_images }}"
     - "{{ docker_container_registry_auth }}"
 
-#- name: Create self-signed certificate
-#  become: true
-#  ansible.builtin.shell: >
-#    openssl req
-#      -newkey rsa:4096 -nodes -sha256 -keyout {{ docker_container_registry_certs }}/domain.key
-#      -addext "subjectAltName = DNS:{{ domain }}"
-#      -x509 -days 365 -out {{ docker_container_registry_certs }}/domain.crt
-
-
 - name: Start the container registry service
   community.docker.docker_container:
     name: "{{ docker_container_registry_container_name }}"
