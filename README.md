@@ -35,15 +35,21 @@ ansible-galaxy install -r requirements.yml
 # Show full usage for the bootstrap script
 ./bootstrap.sh --help
 
-# Create a VM environment with one of each supported operating system. Each device will
-# have 4 cores and 8GB or RAM
-./bootstrap.sh -ncpu=4 -nram=8192 -nd=1 -na=1 -nu=1
+# Create VM environment with defaults:
+# 1 Arch Linux, 1 Debian 11, 1 Ubuntu 22.04 LTS
+# 2 CPU per node, 4GB RAM 
+./bootstrap.sh
+
+# Create a VM environment with customisation
+# 2 Arch Linux, 2 Debian 11, 2 Ubuntu 22.04 LTS
+# 4 CPU per node, 8GB RAM
+./bootstrap.sh -ncpu=4 -nram=8192 -nd=2 -na=2 -nu=2
 ```
 
-**NOTE** If you need to use a password for sudo access on your main workstation (good practise dictates you should), because the bootstrap script helps to install some packages, include the `-pw=* --sudo-pw=*` flag. Extending the above example:
+**NOTE** If you need a password to run privileged actions on your system when running `sudo`, because the bootstrap script helps to install some packages locally, include the `-pw=*` or `--sudo-pw=*` flag. You will likely need this unless your user is in a sudo group with the `NOPASSWD:` option Extending the above example:
 
 ```shell
-./bootstrap.sh -pw='my_password!' -ncpu=4 -nram=8192 -nd=1 -na=1 -nu=1
+./bootstrap.sh -pw='my_system_password!' -ncpu=4 -nram=8192 -nd=2 -na=2 -nu=2
 ```
 
 You can rerun the `bootstrap` script as many times as you like to autostart your VMs; it will only be destructive in the event you change configuration options. This means you can with one line boot up your environment fully after system restart. 
