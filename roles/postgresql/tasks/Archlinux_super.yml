@@ -1,31 +1,48 @@
+- name: Collect Distribution specific host vars for local usage
+  set_fact:
+    postgresql_config_path: "{{ hostvars[inventory_hostname].postgresql_config_path }}"
+    postgresql_root_path: "{{ hostvars[inventory_hostname].postgresql_root_path }}"
+    postgresql_version:  "{{ hostvars[inventory_hostname].postgresql_version }}"
+
 - name: Install packages
   become: True
   community.general.pacman:
-    name: "{{ postgres_arch_packages }}"
+    name: "{{ postgresql_arch_packages }}"
 
 - name: Make sure the postgres users home is set to our root path
   become: true
   ansible.builtin.user:
     name: "{{ postgresql_user }}"
     home: "{{ postgresql_root_path }}"
-    append: yesschema_name
+    append: yes
 
 - name: Check if DB already initialized
   become: true
   ansible.builtin.stat:
-    path: "{{ postgresql_data_path }}"
-  register: postgresql_path_present
+    path: "{{ postgresql_root_path }}/global"
+  register: postgresql_setup
+
+- name: Make sure path empty if initializing
+  become: true
+  when: not postgresql_setup.stat.exists
+  file:
+    path: "{{ postgresql_root_path }}"
+    state: "{{ kill_create }}"
+  loop:
+    - absent
+    - directory
+  loop_control:
+    loop_var: kill_create
 
 - name: Ensure the data path exists
   become: true
   ansible.builtin.file:
     state: directory
-    path: "{{ postgresql_root_path }}"
+    path: "{{ postgresql_path }}"
     owner: "{{ postgresql_user }}"
     group: "{{ postgresql_user }}"
   loop:
     - "{{ postgresql_root_path }}"
-    - "{{ postgresql_data_path }}"
     - "{{ postgresql_config_path }}"
     - "{{ postgresql_config_path }}/conf.d"
   loop_control:
@@ -33,10 +50,10 @@
 
 - name: Initialize the Postgres cluster
   become: True
-  when: not postgresql_path_present.stat.exists
+  when: not postgresql_setup.stat.exists
   ansible.builtin.shell:
     cmd: >
-      sudo -u postgres initdb -D {{ postgresql_data_path }}
+      sudo -u postgres initdb -D {{ postgresql_root_path }}
 
 - name: Create replacement SystemD service
   become: True
@@ -47,7 +64,7 @@
 - name: Render configuration files
   become: True
   template:
-    src: "postgresql.conf.j2"
+    src: "postgresql-{{ postgresql_version }}.conf.j2"
     dest: "{{ postgresql_config_path }}/postgresql.conf"
 
 - name: Restart PostgreSQL service

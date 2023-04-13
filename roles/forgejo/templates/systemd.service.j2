@@ -59,7 +59,7 @@ WorkingDirectory={{ forgejo_system_path }}/
 # If using Unix socket: tells systemd to create the /run/forgejo folder, which will contain the forgejo.sock file
 # (manually creating /run/forgejo doesn't work, because it would not persist across reboots)
 #RuntimeDirectory=forgejo
-ExecStart=/usr/local/bin/forgejo web --config /etc/forgejo/app.ini
+ExecStart=/usr/bin/forgejo web --config /etc/forgejo/app.ini
 Restart=always
 Environment=USER={{ forgejo_system_user }} HOME={{ forgejo_system_user_home_path }} GITEA_WORK_DIR={{ forgejo_system_path }}
 # If you install Git to directory prefix other than default PATH (which happens

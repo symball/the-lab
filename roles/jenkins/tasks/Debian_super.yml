@@ -10,13 +10,19 @@
 
 - name: Add Jenkins apt repository key.
   become: true
-  ansible.builtin.apt_key:
-    url: https://pkg.jenkins.io/debian-stable/jenkins.io.key
+  ansible.builtin.get_url:
+    url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    dest: /etc/apt/keyrings/jenkins.asc
+    mode: '0644'
+    force: true
 
 - name: Add Jenkins Stable repository
   become: true
   ansible.builtin.apt_repository:
-    repo: deb https://pkg.jenkins.io/debian-stable binary/
+    repo: >-
+      deb
+      [signed-by=/etc/apt/keyrings/jenkins.asc]
+      https://pkg.jenkins.io/debian-stable binary/
     state: present
 
 - name: Make sure Java installed before trying Jenkins

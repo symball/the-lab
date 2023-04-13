@@ -9,15 +9,15 @@ User={{ postgresql_user }}
 Group={{ postgresql_user }}
 
 Environment=PGROOT={{ postgresql_root_path }}
+Environment=PGDATA={{ postgresql_root_path }}
 
 SyslogIdentifier=postgres
-PIDFile={{ postgresql_pid_path }}
 RuntimeDirectory=postgresql
 RuntimeDirectoryMode=755
 
-ExecStartPre=/usr/bin/postgresql-check-db-dir {{ postgresql_data_path }}
-ExecStart=/usr/bin/postgres -D {{ postgresql_data_path }}
-ExecReload=/bin/kill -HUP {{ postgresql_pid_path }}
+ExecStartPre=/usr/bin/postgresql-check-db-dir {{ postgresql_root_path }}
+ExecStart=/usr/bin/postgres -D {{ postgresql_config_path }}
+ExecReload=/bin/kill -HUP {{ postgresql_socket_path }}/{{ postgresql_version }}-main.pid
 KillMode=mixed
 KillSignal=SIGINT
 
@@ -27,7 +27,7 @@ OOMScoreAdjust=-200
 
 # Additional security-related features
 PrivateTmp=true
-ProtectHome=true
+ProtectHome=false
 ProtectSystem=full
 NoNewPrivileges=true
 ProtectControlGroups=true

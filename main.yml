@@ -18,8 +18,9 @@
         msg: "{{ ansible_os_family }}-{{ ansible_distribution_major_version }} {{ ansible_architecture }} with super user mode: {{ is_super }}"
     - name: Create control directory
       delegate_to: localhost
+      run_once: true
       file:
-        path: ansible_working_path
+        path: "{{ ansible_working_path }}"
         state: directory
 #
 # Common
@@ -31,7 +32,7 @@
     - name: Perform some common tasks
       ansible.builtin.import_role:
         name: common
-      when: include_common_management
+
 #
 # Desktop
 #
@@ -42,7 +43,6 @@
     - name: Include desktop management
       ansible.builtin.import_role:
         name: desktop
-      when: include_desktop_management
 #
 # kvm virtualisation
 #
@@ -53,7 +53,6 @@
     - name: Include kvm management
       ansible.builtin.import_role:
         name: kvm
-      when: include_kvm_management
 #
 # Certificate Authority
 #
@@ -64,20 +63,15 @@
     - name: Include Certificate Authority managed
       ansible.builtin.import_role:
         name: certificate_authority
-      when: include_certificate_authority_management
 - name: Distribute the CA chain cert
   hosts: all
   tasks:
-    - name: Debug
-      debug:
-        msg: "include_certificate_authority_management = {{ include_certificate_authority_management }}"
     - name: Start Cert distribution
       when:
         - include_certificate_authority_management
         - certificate_authority_trust_chain
       ansible.builtin.import_tasks:
         tasks/certificate_authority_trust_chain.yml
-
 #
 # Docker
 #
@@ -88,7 +82,6 @@
     - name: Include docker management
       ansible.builtin.import_role:
         name: docker
-      when: include_docker_management
 #
 # Go
 #
@@ -99,7 +92,6 @@
     - name: Include go management
       ansible.builtin.import_role:
         name: go
-      when: include_go_management
 
 #
 # MariaDB
@@ -111,7 +103,6 @@
     - name: Include mariadb management
       ansible.builtin.import_role:
         name: mariadb
-      when: include_mariadb_management
 #
 # Nginx
 #
@@ -122,7 +113,6 @@
     - name: Include nginx management
       ansible.builtin.import_role:
         name: nginx
-      when: include_nginx_management
 #
 # NVM
 #
@@ -133,7 +123,6 @@
     - name: Include nvm management
       ansible.builtin.import_role:
         name: nvm
-      when: include_nvm_management
 #
 # PostgreSQL
 #
@@ -144,7 +133,6 @@
     - name: Include postgresql management
       ansible.builtin.import_role:
         name: postgresql
-      when: include_postgresql_management
 #
 # Terraform
 #
@@ -155,7 +143,6 @@
     - name: Include terraform management
       ansible.builtin.import_role:
         name: terraform
-      when: include_terraform_management
 #
 # APPLICATION SPACE. ACTUAL DEPLOYED SERVICES SHOULD ALWAYS BE PLACED AFTER THIS MARKER
 #
@@ -169,7 +156,6 @@
     - name: Include docker_container_registry management
       ansible.builtin.import_role:
         name: docker_container_registry
-      when: include_docker_container_registry_management
 #
 # Home Assistant
 #
@@ -180,7 +166,6 @@
     - name: Include home_assistant management
       ansible.builtin.import_role:
         name: home_assistant
-      when: include_home_assistant_management
 #
 # Home Assistant
 #
@@ -191,7 +176,6 @@
     - name: Include forgejo management
       ansible.builtin.import_role:
         name: forgejo
-      when: include_forgejo_management
 #
 # Jenkins
 #
@@ -202,4 +186,3 @@
     - name: Include jenkins management
       ansible.builtin.import_role:
         name: jenkins
-      when: include_jenkins_management

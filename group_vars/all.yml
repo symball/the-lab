@@ -38,18 +38,25 @@ aur_build_user: aurbuilder
 # Ansible management flags
 # The following flags will completely enable / disable aspects of Ansible operations
 #
-include_certificate_authority_management: true
-include_common_management: true
-include_desktop_management: true
-include_docker_management: true
-include_docker_container_registry_management: true
-include_forgejo_management: true
-include_go_management: true
-include_jenkins_management: true
-include_home_assistant_management: true
-include_kvm_management: true
-include_mariadb_management: true
-include_nginx_management: true
-include_nvm_management: true
-include_postgresql_management: true
-include_terraform_management: true
+role_management_enabled: true
+include_certificate_authority_management: "{{ role_management_enabled }}"
+include_common_management: "{{ role_management_enabled }}"
+include_desktop_management: "{{ role_management_enabled }}"
+include_developer_management: "{{ role_management_enabled }}"
+include_docker_management: "{{ role_management_enabled }}"
+include_docker_container_registry_management: "{{ role_management_enabled }}"
+include_forgejo_management: "{{ role_management_enabled }}"
+include_go_management: "{{ role_management_enabled }}"
+include_jenkins_management: "{{ role_management_enabled }}"
+include_home_assistant_management: "{{ role_management_enabled }}"
+include_kvm_management: "{{ role_management_enabled }}"
+include_mariadb_management: "{{ role_management_enabled }}"
+include_nginx_management: "{{ role_management_enabled }}"
+include_nvm_management: "{{ role_management_enabled }}"
+include_postgresql_management: "{{ role_management_enabled }}"
+include_python_management: "{{ role_management_enabled }}"
+include_rabbitmq_management: "{{ role_management_enabled }}"
+include_redis_management: "{{ role_management_enabled }}"
+include_terraform_management: "{{ role_management_enabled }}"
+include_vagrant_management: "{{ role_management_enabled }}"
+include_virtualbox_management: "{{ role_management_enabled }}"

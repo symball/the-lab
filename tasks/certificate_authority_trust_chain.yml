@@ -2,18 +2,35 @@
   set_fact:
     certificate_authority_cert_format: "{{ hostvars[groups['certificate_authority'][0]]['certificate_authority_cert_format'] }}"
 
+- name: Create temporary directory to hold key on host
+  when: ansible_os_family == "Archlinux"
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: key
+  register: temp_key_path
+
 - name: Copy certificate to host - Arch Linux
   become: true
   when: ansible_os_family == "Archlinux"
   ansible.builtin.copy:
     src: "{{ ansible_working_path }}/ca-chain.cert.{{ certificate_authority_cert_format }}"
-    dest: "{{ common_user_home }}/ca-chain.cert.{{ certificate_authority_cert_format }}"
+    dest: "{{ temp_key_path.path }}/ca-chain.cert.{{ certificate_authority_cert_format }}"
 
 - name: Run trust agent
   become: true
   when: ansible_os_family == "Archlinux"
   ansible.builtin.shell: >-
-    trust anchor --store {{ common_user_home }}/ca-chain.cert.{{ certificate_authority_cert_format }}
+    trust anchor --store {{ temp_key_path.path }}/ca-chain.cert.{{ certificate_authority_cert_format }}
+
+- name: Cleanup the temporary file
+  become: true
+  when:
+    - ansible_os_family == "Archlinux"
+    - temp_key_path.path is defined
+  ansible.builtin.file:
+    path: "{{ temp_key_path.path }}"
+    state: absent
+
 
 - name: Ensure cert path exists
   become: true

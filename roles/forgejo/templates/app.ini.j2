@@ -339,7 +339,7 @@ LFS_JWT_SECRET = {{ forgejo_lfs_jwt_secret }}
 ;; MySQL Configuration
 ;;
 DB_TYPE = {{ forgejo_db_type }}
-HOST = {{ db_host }}:{{ db_port }} ; can use socket e.g. /var/run/mysqld/mysqld.sock
+HOST = {{ db_host_fqcdn }}:{{ db_port }} ; can use socket e.g. /var/run/mysqld/mysqld.sock
 NAME = {{ forgejo_db_user }}
 USER = {{ forgejo_db_user }}
 PASSWD = '{{ forgejo_db_pass }}' ;Use PASSWD = `your password` for quoting if you use special characters in the password.
