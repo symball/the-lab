@@ -26,7 +26,13 @@ The only hard requirements to use this project are having [Ansible](https://www.
 
 ## Quickstart
 
-If you are planning to use this as a development environment, there is a bootstrap script to help you get started which will prepare your main device as a virtualisation server, create the virtual machines on your behalf and, prepare an initial inventory 
+If you are planning to use this as a development environment, there is a bootstrap script to help you get started which will prepare your main device as a virtualisation server, create the virtual machines on your behalf and, prepare an initial inventory.
+
+Running the bootstrap script will:
+
+* Provision your local machine using Ansible for hosting Virtual Machines
+* Create some virtual machines on your behalf using Terraform
+* Create a barebones inventory file for you to customize. Read [The Environment](#the-environment)
 
 ```shell
 # Install extra Ansible modules
