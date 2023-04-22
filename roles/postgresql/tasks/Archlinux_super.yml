@@ -14,7 +14,6 @@
   ansible.builtin.user:
     name: "{{ postgresql_user }}"
     home: "{{ postgresql_root_path }}"
-    append: yes
 
 - name: Check if DB already initialized
   become: true
