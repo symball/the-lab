@@ -12,7 +12,7 @@
   become: true
   ansible.builtin.get_url:
     url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-    dest: /etc/apt/keyrings/jenkins.asc
+    dest: /usr/share/keyrings/jenkins.asc
     mode: '0644'
     force: true
 
@@ -21,7 +21,7 @@
   ansible.builtin.apt_repository:
     repo: >-
       deb
-      [signed-by=/etc/apt/keyrings/jenkins.asc]
+      [signed-by=/usr/share/keyrings/jenkins.asc]
       https://pkg.jenkins.io/debian-stable binary/
     state: present
 

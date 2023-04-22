@@ -35,8 +35,8 @@
   become: true
   when: nginx_use_internal_certificate_authority
   ansible.builtin.copy:
-    src: "/tmp/{{ certificate }}"
-    dest: "/etc/nginx/sec/{{ certificate }}"
+    src: "/tmp/{{ certificate_item }}"
+    dest: "/etc/nginx/sec/{{ certificate_item }}"
     owner: "{{ nginx_user }}"
     group: "{{ nginx_user_group }}"
     mode: 0500
@@ -44,7 +44,7 @@
     - "{{ domain }}.cert.{{ ca_key_type }}"
     - "{{ domain }}.key.{{ ca_key_type }}"
   loop_control:
-    loop_var: certificate
+    loop_var: certificate_item
 
 - name: Generate security certificate
   when: not nginx_use_internal_certificate_authority
@@ -96,9 +96,11 @@
 
 - name: Write service to host files on all nodes
   become: true
-  delegate_to: "{{ hostvars[item].inventory_hostname }}"
+  delegate_to: "{{ hostvars[inventory_device].inventory_hostname }}"
   ansible.builtin.blockinfile:
     dest: /etc/hosts
     marker: "# {mark} ANSIBLE SERVICE HOST {{ domain }}"
     block: "{{ ansible_host }} {{ domain }}"
   with_items: "{{ groups.all }}"
+  loop_control:
+    loop_var: inventory_device

@@ -21,16 +21,16 @@ VERBOSE=true
 WORKING_PATH=$(pwd)
 ARTIFACTS_PATH="${WORKING_PATH}/provisioning/artifacts"
 HOSTNAME=$(cat /etc/hostname)
+BOOTSTRAP_CONFIG="./.bootstrap_config"
+ALREADY_RUN=false
 
 red=`tput setaf 1`
 green=`tput setaf 2`
-blue=`tput setaf 4`
 reset=`tput sgr0`
 #
 # ENVIRONMENT SPECIFIC. This is the section you will want to change
 #
 REQUIRED_PROGRAMS="ansible ssh"
-REQUIRED_PORTS="3000 5432"
 
 echo "${green}--=== VM Bootstrap Script ===--${reset}"
 echo ""
@@ -73,7 +73,7 @@ ok() {
 
 # Command help
 display_usage() {
-  echo "Prepare your battlestation and some Virtual machines to use as a lab"
+  echo "Prepare your device and environment to use as a lab"
   echo ""
   echo " -h --help                         Show this message"
   echo " -mu=* --master-user=*             The username of your super user. Defaults to current user"
@@ -83,8 +83,8 @@ display_usage() {
   echo " -na=* --nodes-arch=*              Number of VMs based on Arch Linux to create"
   echo " -nd=* --nodes-debian=*            Number of VMs based on Debian 11 Linux to create"
   echo " -nu=* --nodes-ubuntu=*            Number of VMs based on Ubuntu 22.04 Linux to create"
-  echo " -ncpu=* --nodes-cpu=*             Number of CPUs to assign to each VM. Can be overprovisioned"
-  echo " -nram=* --nodes-ram=*             Amount of RAM (MB) to assign to each VM. Can be overprovisioned"
+  echo " -ncpu=* --nodes-cpu=*             Number of CPUs to assign to each VM. Can be over-provisioned"
+  echo " -nram=* --nodes-ram=*             Amount of RAM (MB) to assign to each VM. Can be over-provisioned"
   echo " -pw=* --sudo-pw=*                 If password required to use sudo on your main workstation, set this"
   echo ""
   echo "Example: ./bootstrap.sh -pw='mypassword' -ncpu=4 -nram=8192 -nd=1 -na=1 -nu=1"
@@ -132,6 +132,15 @@ for argument in "$@"; do
   shift
 done
 
+# Check if the bootstrap script has previously complete in order to customize parts of the script for continued operation
+if test -f $BOOTSTRAP_CONFIG; then
+  ALREADY_RUN=true
+  source $BOOTSTRAP_CONFIG
+  echo ""
+  echo "${red}Detected existing configuration. To reset your environment, delete the ${BOOTSTRAP_CONFIG} file${reset}"
+  echo ""
+fi
+
 # Check whether the required programs installed
 [ "$VERBOSE" = true ] && echo "---=== Checking required programs ===---"
 for PROGRAM in $REQUIRED_PROGRAMS; do
@@ -153,19 +162,22 @@ fi
 #
 # INITIAL PREPARATION
 #
-echo ""
-echo Creating an initial inventory file to prepare your device
-if [[ -n $SUDO_PASSWORD ]]; then
-OPEN="{{" CLOSE="}}" HOSTNAME=${HOSTNAME} \
-SUDO_PASSWORD=$SUDO_PASSWORD \
-MASTER_USER=$MASTER_USER \
-SSH_KEY_MASTER_PATH=$SSH_KEY_MASTER_PATH \
-${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/initial_inventory.yml.m2 > inventory.yml
-else
-OPEN="{{" CLOSE="}}" HOSTNAME=${HOSTNAME} \
-MASTER_USER=$MASTER_USER \
-SSH_KEY_MASTER_PATH=$SSH_KEY_MASTER_PATH \
-${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/initial_inventory.yml.m2 > inventory.yml
+
+if [ "$ALREADY_RUN" = false ]; then
+  echo ""
+  echo Creating an initial inventory file to prepare your device
+  if [[ -n $SUDO_PASSWORD ]]; then
+  OPEN="{{" CLOSE="}}" HOSTNAME=${HOSTNAME} \
+  SUDO_PASSWORD=$SUDO_PASSWORD \
+  MASTER_USER=$MASTER_USER \
+  SSH_KEY_MASTER_PATH=$SSH_KEY_MASTER_PATH \
+  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/initial_inventory.yml.m2 > inventory.yml
+  else
+  OPEN="{{" CLOSE="}}" HOSTNAME=${HOSTNAME} \
+  MASTER_USER=$MASTER_USER \
+  SSH_KEY_MASTER_PATH=$SSH_KEY_MASTER_PATH \
+  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/initial_inventory.yml.m2 > inventory.yml
+  fi
 fi
 
 echo ""
@@ -188,21 +200,24 @@ else
   echo "Creating SSH file at ${SSH_KEY_COMMON_PATH}"
   ssh-keygen -t rsa -b 4096 -f $SSH_KEY_COMMON_PATH -N ""
 fi
-SSH_PUBLIC_COMMON_KEY=$(cat ${SSH_KEY_COMMON_PATH}.pub)
 
-echo ""
-echo "Setting up group_vars/all.yml"
-OPEN="{{" CLOSE="}}" \
-HOSTNAME=${HOSTNAME} \
-MASTER_USER=${MASTER_USER} \
-COMMON_USER=${COMMON_USER} \
-SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH} \
-SSH_KEY_COMMON_PATH=${SSH_KEY_COMMON_PATH} \
-${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/group_vars.yml.m2 > group_vars/all.yml
+if [ "$ALREADY_RUN" = false ]; then
+  echo ""
+  echo "Setting up group_vars/all.yml"
+  OPEN="{{" CLOSE="}}" \
+  HOSTNAME=${HOSTNAME} \
+  MASTER_USER=${MASTER_USER} \
+  COMMON_USER=${COMMON_USER} \
+  SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH} \
+  SSH_KEY_COMMON_PATH=${SSH_KEY_COMMON_PATH} \
+  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/group_vars.yml.m2 > group_vars/all.yml
+fi
 
-echo ""
-echo "Provisioning THIS device"
-ansible-playbook -i ./inventory.yml main.yml
+if [ "$ALREADY_RUN" = false ]; then
+  echo ""
+  echo "Provisioning THIS device"
+  ansible-playbook -i ./inventory.yml main.yml
+fi
 
 if [[ $USER_IN_LIBVIRT == false ]]; then
   echo "${red}Intervention possibly required${reset}"
@@ -212,85 +227,101 @@ if [[ $USER_IN_LIBVIRT == false ]]; then
   halt "Please logout and back in to allow the changes to take effect"
 fi
 
-echo ""
-echo "Creating cloud config for VMs"
-OPEN="{{" CLOSE="}}" \
-MASTER_USER=${MASTER_USER} \
-SSH_PUBLIC_MASTER_KEY=${SSH_PUBLIC_MASTER_KEY} \
-${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/cloud_init.cfg.m2 > ${WORKING_PATH}/provisioning/terraform_libvirt/cloud_init.cfg
-
- echo ""
- echo "Creating virtual machines"
- cd ${WORKING_PATH}/provisioning/terraform_libvirt
- terraform init
- terraform apply --auto-approve \
-   -var "arch_node_count=$ARCH_NODES" \
-   -var "debian_node_count=$DEBIAN_NODES" \
-   -var "ubuntu_node_count=$UBUNTU_NODES" \
-   -var "cpu_per_node=$CPU_PER_NODE" \
-   -var "ram_per_node=$RAM_PER_NODE"
- cd $WORKING_PATH
-
-echo ""
-echo "Creating inventory for all devices"
-# Turn the number of devices in to a list for mustache
-ARCH_VMS='( '
-for ((x=0; x<$ARCH_NODES; x++))
-do
-ARCH_VMS="$ARCH_VMS"$x","
-done
-ARCH_VMS="${ARCH_VMS%,} )"
-DEBIAN_VMS='( '
-for ((x=0; x<$DEBIAN_NODES; x++))
-do
-DEBIAN_VMS="$DEBIAN_VMS"$x","
-done
-DEBIAN_VMS="${DEBIAN_VMS%,} )"
-UBUNTU_VMS='( '
-for ((x=0; x<$UBUNTU_NODES; x++))
-do
-UBUNTU_VMS="$UBUNTU_VMS"$x","
-done
-UBUNTU_VMS="${UBUNTU_VMS%,} )"
-
-if [[ -n $SUDO_PASSWORD ]]; then
-echo """export OPEN="{{"
-export CLOSE="}}"
-export HOSTNAME=${HOSTNAME}
-export MASTER_USER=${MASTER_USER}
-export SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH}
-export SUDO_PASSWORD=$SUDO_PASSWORD
-export ARCH_VMS=${ARCH_VMS}
-export DEBIAN_VMS=${DEBIAN_VMS}
-export UBUNTU_VMS=${UBUNTU_VMS}
-""" > temp
-else
-echo """export OPEN="{{"
-export CLOSE="}}"
-export HOSTNAME=${HOSTNAME}
-export MASTER_USER=${MASTER_USER}
-export SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH}
-export ARCH_VMS=${ARCH_VMS}
-export DEBIAN_VMS=${DEBIAN_VMS}
-export UBUNTU_VMS=${UBUNTU_VMS}
-""" > temp
+if [ "$ALREADY_RUN" = false ]; then
+  echo ""
+  echo "Creating cloud config for VMs"
+  OPEN="{{" CLOSE="}}" \
+  MASTER_USER=${MASTER_USER} \
+  SSH_PUBLIC_MASTER_KEY=${SSH_PUBLIC_MASTER_KEY} \
+  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/cloud_init.cfg.m2 > ${WORKING_PATH}/provisioning/terraform_libvirt/cloud_init.cfg
 fi
-${ARTIFACTS_PATH}/mo --source=temp ${ARTIFACTS_PATH}/inventory.yml.m2 > inventory.yml
-rm temp
 
 echo ""
-echo "Install Ansible Galaxy requirementss"
-ansible-galaxy install -r requirements.yml
+echo "Creating virtual machines"
+cd ${WORKING_PATH}/provisioning/terraform_libvirt
+if [ "$ALREADY_RUN" = false ]; then
+  terraform init
+fi
+
+terraform apply --auto-approve \
+ -var "arch_node_count=$ARCH_NODES" \
+ -var "debian_node_count=$DEBIAN_NODES" \
+ -var "ubuntu_node_count=$UBUNTU_NODES" \
+ -var "cpu_per_node=$CPU_PER_NODE" \
+ -var "ram_per_node=$RAM_PER_NODE"
+cd $WORKING_PATH
+
+if [ "$ALREADY_RUN" = false ]; then
+  echo ""
+  echo "Creating inventory for all devices"
+  # Turn the number of devices in to a list for mustache
+  ARCH_VMS='( '
+  for ((x=0; x<$ARCH_NODES; x++))
+  do
+  ARCH_VMS="$ARCH_VMS"$x","
+  done
+  ARCH_VMS="${ARCH_VMS%,} )"
+  DEBIAN_VMS='( '
+  for ((x=0; x<$DEBIAN_NODES; x++))
+  do
+  DEBIAN_VMS="$DEBIAN_VMS"$x","
+  done
+  DEBIAN_VMS="${DEBIAN_VMS%,} )"
+  UBUNTU_VMS='( '
+  for ((x=0; x<$UBUNTU_NODES; x++))
+  do
+  UBUNTU_VMS="$UBUNTU_VMS"$x","
+  done
+  UBUNTU_VMS="${UBUNTU_VMS%,} )"
+
+  if [[ -n $SUDO_PASSWORD ]]; then
+  echo """export OPEN="{{"
+  export CLOSE="}}"
+  export HOSTNAME=${HOSTNAME}
+  export MASTER_USER=${MASTER_USER}
+  export SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH}
+  export SUDO_PASSWORD=$SUDO_PASSWORD
+  export ARCH_VMS=${ARCH_VMS}
+  export DEBIAN_VMS=${DEBIAN_VMS}
+  export UBUNTU_VMS=${UBUNTU_VMS}
+  """ > temp
+  else
+  echo """export OPEN="{{"
+  export CLOSE="}}"
+  export HOSTNAME=${HOSTNAME}
+  export MASTER_USER=${MASTER_USER}
+  export SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH}
+  export ARCH_VMS=${ARCH_VMS}
+  export DEBIAN_VMS=${DEBIAN_VMS}
+  export UBUNTU_VMS=${UBUNTU_VMS}
+  """ > temp
+  fi
+  ${ARTIFACTS_PATH}/mo --source=temp ${ARTIFACTS_PATH}/inventory.yml.m2 > inventory.yml
+  rm temp
+fi
+
+if [ "$ALREADY_RUN" = false ]; then
+  echo ""
+  echo "Install Ansible Galaxy requirements"
+  ansible-galaxy install -r requirements.yml
+fi
+
+echo ""
+echo "Saving bootstrap config to $BOOTSTRAP_CONFIG"
+ARCH_NODES=$ARCH_NODES \
+DEBIAN_NODES=$DEBIAN_NODES \
+UBUNTU_NODES=$UBUNTU_NODES \
+CPU_PER_NODE=$CPU_PER_NODE \
+RAM_PER_NODE=$RAM_PER_NODE \
+${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/bootstrap_config.m2 > $BOOTSTRAP_CONFIG
 
 echo ""
 echo "${green}--=== Environment Ready! ===--${reset}"
 echo ""
-echo "Go forth and be awesome"
-echo ""
-echo "Now customize your roles inventory: ./inventory.yml "
+echo "Go forth and be awesome! Don't forget to customize your inventory"
 echo ""
 echo "${red}If you are planning to use the deployed services in production!${reset}"
 echo "Don't forget to also customize your variables and create secrets!"
 echo "See README.md for more information"
 echo ""
-echo "Once ready, run ansible-playbook -i ./inventory.yml main.yml"
+echo "Run ${green}ansible-playbook -i ./inventory.yml main.yml${reset}"
