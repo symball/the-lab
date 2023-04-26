@@ -236,9 +236,16 @@
     group: "{{ certificate_authority_user_group }}"
     mode: 0400
 
-- name: Download the Intermediate certificate for distribution
+- name: Download the root certificate for distribution
+  become: true
+  ansible.builtin.fetch:
+    flat: true
+    src: "{{ certificate_authority_root_path }}/certs/ca.cert.{{ certificate_authority_cert_format }}"
+    dest: "{{ ansible_working_path }}/root.ca.cert.{{ certificate_authority_cert_format }}"
+
+- name: Download the intermediate certificate for distribution
   become: true
   ansible.builtin.fetch:
     flat: true
     src: "{{ certificate_authority_intermediate_path }}/certs/intermediate.cert.{{ certificate_authority_cert_format }}"
-    dest: "{{ ansible_working_path }}/intermediate.cert.{{ certificate_authority_cert_format }}"
+    dest: "{{ ansible_working_path }}/intermediate.ca.cert.{{ certificate_authority_cert_format }}"

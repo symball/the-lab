@@ -1,0 +1,38 @@
+- name: Check whether the Jenkins CLI is available
+  become: true
+  ansible.builtin.stat:
+    path: "{{ jenkins_home }}/jenkins-cli.jar"
+  register: jenkins_cli_present
+
+- name: Download fresh Jenkins CLI from the instance
+  become: true
+  when: not jenkins_cli_present.stat.exists
+  ansible.builtin.get_url:
+    url: "https://{{ domain }}/{{ jenkins_cli_package_url }}"
+    dest: "{{ jenkins_home }}/jenkins-cli.jar"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+
+- name: Write across the script to use for installing plugins
+  become: true
+  ansible.builtin.template:
+    src: install_plugins.groovy.j2
+    dest: "{{ jenkins_home }}/install_plugins.groovy"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+
+- name: Run the install plugins script
+  become: true
+  ansible.builtin.shell: >
+    sudo -u jenkins java -jar ./jenkins-cli.jar
+    -s https://{{ domain }} 
+    -auth {{ jenkins_admin_user_name }}:{{ jenkins_admin_user_pass }}
+    groovy = < install_plugins.groovy
+  args:
+    chdir: "{{ jenkins_home }}"
+
+- name: Cleanup the plugins script
+  become: true
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}/install_plugins.groovy"
+    state: absent
