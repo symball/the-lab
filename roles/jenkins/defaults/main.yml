@@ -15,8 +15,11 @@ jenkins_port: 8080
 jenkins_user: jenkins
 jenkins_user_group: "{{ jenkins_user }}"
 jenkins_home: /var/lib/jenkins
+jenkins_unpacked_path: /var/cache/jenkins/war
 jenkins_admin_user_name: admin
 jenkins_admin_user_pass: development
+jenkins_admin_email: not@applicable.com
+
 jenkins_plugins:
   - "docker-workflow"
   - "javax-mail-api"

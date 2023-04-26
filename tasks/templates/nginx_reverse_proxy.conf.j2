@@ -20,6 +20,10 @@ server {
   {% endif %}
 }
 
+{% if proxy_extra_root_rules is defined %}
+    {{ proxy_extra_root_rules }}
+{% endif %}
+
 server {
 
     {% if client_max_body_size is defined %}
@@ -55,6 +59,10 @@ server {
       auth_basic_user_file {{ common_working_path }}/nginx/.htpasswd_{{ domain }};
     {% endif %}
 
+    {% if proxy_extra_server_rules is defined %}
+      {{ proxy_extra_server_rules }}
+    {% endif %}
+
     location / {
         # Forwarding using upstream
         proxy_pass http://{{ reference }};
@@ -67,17 +75,13 @@ server {
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       proxy_set_header X-Forwarded-Proto $scheme;
 
-      # Websocket agents
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection 'upgrade';
-
       proxy_connect_timeout  90;
       proxy_send_timeout         90;
       proxy_read_timeout         90;
       proxy_cache_bypass $http_upgrade;
 
-      {% if proxy_location_rules is defined %}
-      {{ proxy_location_rules }}
+      {% if proxy_extra_location_rules is defined %}
+      {{ proxy_extra_location_rules }}
       {% endif %}
     }
 

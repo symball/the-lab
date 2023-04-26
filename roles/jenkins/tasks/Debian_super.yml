@@ -1,5 +1,6 @@
 - set_fact:
     domain: "{{ jenkins_domain | default(jenkins_reference + '.' + fqcdn) }}"
+    jenkins_plugin_joined: "{{ jenkins_plugins | join(' ') }}"
 
 - name: Create Nginx rule
   import_tasks: tasks/nginx_reverse_proxy.yml
@@ -7,9 +8,22 @@
     reference: "{{ role_name }}"
     app_port: "{{ jenkins_port }}"
     letsencrypt: "{{ nginx_facade_use_certbot }}"
-    proxy_location_rules: |
+    proxy_extra_root_rules: |
+      # WebSocket rules
+      map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+      }
+    proxy_extra_location_rules: |
+      # Disable Nginx buffering for CLI / integrations 
       proxy_request_buffering off;
       proxy_buffering off;
+      # WebSocket rules
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection 'upgrade';
+    proxy_extra_server_rules: |
+      # pass through headers from Jenkins that Nginx considers invalid
+      ignore_invalid_headers off;
 
 - name: Add Jenkins apt repository key.
   become: true
@@ -91,8 +105,15 @@
   ansible.builtin.shell: >
     sudo -u jenkins pass init jenkins-ansible
 
+- name: Check whether the Jenkins has been setup with the flag
+  become: true
+  ansible.builtin.stat:
+    path: "{{ jenkins_home }}/.setup_run"
+  register: jenkins_setup_run
+
 - name: Write setup Groovy script to Jenkins path for init
   become: true
+  when: not jenkins_setup_run.stat.exists
   ansible.builtin.template:
     src: init.groovy.j2
     dest: "{{ jenkins_home }}/init.groovy"
@@ -102,6 +123,8 @@
 
 - name: Restart Jenkins Service to run the initial setup script
   become: True
+  when: not jenkins_setup_run.stat.exists
+
   ansible.builtin.systemd:
     name: jenkins
     state: restarted
@@ -112,12 +135,21 @@
     path: "{{ jenkins_home }}/init.groovy"
     state: absent
 
+- name: Create Nginx rule
+  import_tasks: install_plugins.yml
+
 - name: Restart Jenkins to make sure everything is clean
   become: True
   ansible.builtin.systemd:
     name: jenkins
     state: restarted
 
+- name: Create a marker to show init setup complete
+  become: true
+  when: not jenkins_setup_run.stat.exists
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}/.setup_run"
+    state: touch
 
 
 

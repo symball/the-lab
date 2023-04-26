@@ -9,14 +9,27 @@
     suffix: key
   register: temp_key_path
 
-- name: Copy certificate to host - Arch Linux
+- name: Copy root certificate to host - Arch Linux
   become: true
   when: ansible_os_family == "Archlinux"
   ansible.builtin.copy:
-    src: "{{ ansible_working_path }}/intermediate.cert.{{ certificate_authority_cert_format }}"
+    src: "{{ ansible_working_path }}/root.ca.cert.{{ certificate_authority_cert_format }}"
+    dest: "{{ temp_key_path.path }}/{{ ansible_project_name }}-root.cert.{{ certificate_authority_cert_format }}"
+
+- name: Copy intermediate certificate to host - Arch Linux
+  become: true
+  when: ansible_os_family == "Archlinux"
+  ansible.builtin.copy:
+    src: "{{ ansible_working_path }}/intermediate.ca.cert.{{ certificate_authority_cert_format }}"
     dest: "{{ temp_key_path.path }}/{{ ansible_project_name }}-intermediate.cert.{{ certificate_authority_cert_format }}"
 
-- name: Run trust agent
+- name: Run trust agent for root
+  become: true
+  when: ansible_os_family == "Archlinux"
+  ansible.builtin.shell: >-
+    trust anchor --store {{ temp_key_path.path }}/{{ ansible_project_name }}-root.cert.{{ certificate_authority_cert_format }}
+
+- name: Run trust agent for intermediate
   become: true
   when: ansible_os_family == "Archlinux"
   ansible.builtin.shell: >-
@@ -31,23 +44,21 @@
     path: "{{ temp_key_path.path }}"
     state: absent
 
-
-- name: Ensure cert path exists
-  become: true
-  when: ansible_os_family == "Debian"
-  file:
-    path: /usr/local/share/certificates
-    state: directory
-
-- name: Copy certificate to host - Debian / Ubuntu Linux
+- name: Copy Root certificate to host - Debian / Ubuntu Linux
   become: true
   when: ansible_os_family == "Debian"
   ansible.builtin.copy:
-    src: "{{ ansible_working_path }}/intermediate.cert.{{ certificate_authority_cert_format }}"
+    src: "{{ ansible_working_path }}/root.ca.cert.{{ certificate_authority_cert_format }}"
+    dest: "/usr/local/share/ca-certificates/{{ ansible_project_name }}-root.crt"
+
+- name: Copy Intermediate certificate to host - Debian / Ubuntu Linux
+  become: true
+  when: ansible_os_family == "Debian"
+  ansible.builtin.copy:
+    src: "{{ ansible_working_path }}/intermediate.ca.cert.{{ certificate_authority_cert_format }}"
     dest: "/usr/local/share/ca-certificates/{{ ansible_project_name }}-intermediate.crt"
 
 - name: Run trust agent
   become: true
   when: ansible_os_family == "Debian"
-  ansible.builtin.shell: >-
-    update-ca-certificates
+  ansible.builtin.shell: update-ca-certificates
