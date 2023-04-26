@@ -1,0 +1,131 @@
+- name: Create folder for Docker config
+  become: true
+  when: "'docker' in group_names"
+  file:
+    path: "{{ jenkins_home }}/.docker"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+    state: directory
+    mode: "0760"
+
+- name: Copy across the initial docker config telling it to use pass as credential store
+  become: true
+  when: "'docker' in group_names"
+  ansible.builtin.copy:
+    src: "docker-config.json"
+    dest: "{{ jenkins_home }}/.docker/config.json"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+
+- name: Check whether GPG keyring has been setup
+  become: True
+  ansible.builtin.shell: >
+    sudo -u {{ jenkins_user }} gpg --list-keys | grep -q jenkins-ansible; echo $?
+  register: GPG_KEY_SETUP
+
+- name: Create a GPG keyring ansible use
+  when: GPG_KEY_SETUP.stdout == "1"
+  become: true
+  ansible.builtin.shell: >
+    sudo -u {{ jenkins_user }} gpg --batch --passphrase '' --quick-gen-key jenkins-ansible default default
+
+- name: Initiate pass to ansible
+  when: GPG_KEY_SETUP.stdout == "1"
+  become: true
+  ansible.builtin.shell: >
+    sudo -u {{ jenkins_user }} pass init jenkins-ansible
+
+- name: Check whether the Jenkins has been setup with the flag
+  become: true
+  ansible.builtin.stat:
+    path: "{{ jenkins_home }}/.setup_run"
+  register: jenkins_setup_run
+
+- name: Write setup Groovy script to Jenkins path for init
+  become: true
+  when: not jenkins_setup_run.stat.exists
+  ansible.builtin.template:
+    src: init.groovy.j2
+    dest: "{{ jenkins_home }}/init.groovy"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+    mode: "0600"
+
+- name: Restart Jenkins Service to run the initial setup script
+  become: True
+  when: not jenkins_setup_run.stat.exists
+  ansible.builtin.systemd:
+    name: jenkins
+    state: restarted
+
+- name: Wait for Jenkins to become ready
+  when: not jenkins_setup_run.stat.exists
+  until: "jenkins_ready.status == 200"
+  retries: 5
+  delay: 10
+  register: jenkins_ready
+  ansible.builtin.uri:
+    url: "https://{{ jenkins_fqcdn }}/login"
+
+- name: Remove the initialisation script now run
+  become: true
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}/init.groovy"
+    state: absent
+
+- name: Check whether the Jenkins CLI is available
+  become: true
+  ansible.builtin.stat:
+    path: "{{ jenkins_home }}/jenkins-cli.jar"
+  register: jenkins_cli_present
+
+- name: Download fresh Jenkins CLI from the instance
+  become: true
+  when: not jenkins_cli_present.stat.exists
+  ansible.builtin.get_url:
+    url: "https://{{ jenkins_fqcdn }}/{{ jenkins_cli_package_url }}"
+    dest: "{{ jenkins_home }}/jenkins-cli.jar"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+
+- name: Write across the script to use for installing plugins
+  become: true
+  ansible.builtin.template:
+    src: install_plugins.groovy.j2
+    dest: "{{ jenkins_home }}/install_plugins.groovy"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_user_group }}"
+
+- name: Print time warning
+  ansible.builtin.debug:
+    msg: This appears to be initial setup. Installing plugins may take a while. Go grab a drink
+  when: not jenkins_setup_run.stat.exists
+
+- name: Run the install plugins script
+  become: true
+  ansible.builtin.shell: >
+    sudo -u jenkins java -jar ./jenkins-cli.jar \
+    -s https://{{ jenkins_fqcdn }}  
+    -auth {{ jenkins_admin_user_name }}:{{ jenkins_admin_user_pass }}
+    groovy = < install_plugins.groovy
+  args:
+    chdir: "{{ jenkins_home }}"
+
+- name: Cleanup the plugins script
+  become: true
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}/install_plugins.groovy"
+    state: absent
+
+- name: Restart Jenkins to make sure plugin installation is clean
+  become: True
+  ansible.builtin.systemd:
+    name: jenkins
+    state: restarted
+
+- name: Create a marker to show init setup complete
+  become: true
+  when: not jenkins_setup_run.stat.exists
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}/.setup_run"
+    state: touch

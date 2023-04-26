@@ -1,18 +1,10 @@
-- set_fact:
-    domain: "{{ jenkins_domain | default(jenkins_reference + '.' + fqcdn) }}"
-
-- name: Create Nginx rule
-  import_tasks: tasks/nginx_reverse_proxy.yml
-  vars:
-    reference: "{{ role_name }}"
-    app_port: "{{ jenkins_port }}"
-    letsencrypt: "{{ nginx_facade_use_certbot }}"
+- name: Define reverse proxy rule
+  import_tasks: define_proxy.yml
 
 - name: Install
   become: True
   community.general.pacman:
     name: "{{ jenkins_arch_packages }}"
-
 
 - name: Create config
   become: True
@@ -24,7 +16,7 @@
   when: "'docker' in group_names"
   become: True
   user:
-    name: jenkins
+    name: "{{ jenkins_user }}"
     append: true
     groups: docker
 
@@ -35,39 +27,5 @@
     state: started
     enabled: yes
 
-- name: Create folder for Docker config
-  become: true
-  when: "'docker' in group_names"
-  file:
-    path: "/var/lib/jenkins/.docker"
-    owner: jenkins
-    group: jenkins
-    state: directory
-    mode: "0760"
-
-- name: Copy across the initial docker config telling it to use pass as credential store
-  become: true
-  when: "'docker' in group_names"
-  ansible.builtin.copy:
-    src: "docker-config.json"
-    dest: "/var/lib/jenkins/.docker/config.json"
-    owner: jenkins
-    group: jenkins
-
-- name: Check whether GPG keyring has been setup
-  become: True
-  ansible.builtin.shell: >
-    sudo -u jenkins gpg --list-keys | grep -q jenkins-ansible; echo $?
-  register: GPG_KEY_SETUP
-
-- name: Create a GPG keyring ansible use
-  when: GPG_KEY_SETUP.stdout == "1"
-  become: true
-  ansible.builtin.shell: >
-    sudo -u jenkins gpg --batch --passphrase '' --quick-gen-key jenkins-ansible default default
-
-- name: Initiate pass to ansible
-  when: GPG_KEY_SETUP.stdout == "1"
-  become: true
-  ansible.builtin.shell: >
-    sudo -u jenkins pass init jenkins-ansible
+- name: Post install setup
+  import_tasks: post_install.yml
