@@ -1,29 +1,5 @@
-- set_fact:
-    domain: "{{ jenkins_domain | default(jenkins_reference + '.' + fqcdn) }}"
-    jenkins_plugin_joined: "{{ jenkins_plugins | join(' ') }}"
-
-- name: Create Nginx rule
-  import_tasks: tasks/nginx_reverse_proxy.yml
-  vars:
-    reference: "{{ role_name }}"
-    app_port: "{{ jenkins_port }}"
-    letsencrypt: "{{ nginx_facade_use_certbot }}"
-    proxy_extra_root_rules: |
-      # WebSocket rules
-      map $http_upgrade $connection_upgrade {
-        default upgrade;
-        '' close;
-      }
-    proxy_extra_location_rules: |
-      # Disable Nginx buffering for CLI / integrations 
-      proxy_request_buffering off;
-      proxy_buffering off;
-      # WebSocket rules
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection 'upgrade';
-    proxy_extra_server_rules: |
-      # pass through headers from Jenkins that Nginx considers invalid
-      ignore_invalid_headers off;
+- name: Define reverse proxy rule
+  import_tasks: define_proxy.yml
 
 - name: Add Jenkins apt repository key.
   become: true
@@ -42,22 +18,16 @@
       https://pkg.jenkins.io/debian-stable binary/
     state: present
 
-- name: Make sure Java installed before trying Jenkins
-  become: True
-  apt:
-    update_cache: yes
-    name: "{{ jenkins_debian_java_package }}"
-
 - name: Install Jenkins
   become: true
   ansible.builtin.apt:
-    name: jenkins
+    name: "{{ jenkins_debian_packages }}"
 
 - name: Add jenkins to the docker group
   when: "'docker' in group_names"
   become: True
   user:
-    name: jenkins
+    name: "{{ jenkins_user }}"
     append: true
     groups: docker
 
@@ -68,88 +38,9 @@
     state: started
     enabled: yes
 
-- name: Create folder for Docker config
-  become: true
-  when: "'docker' in group_names"
-  file:
-    path: "{{ jenkins_home }}/.docker"
-    owner: jenkins
-    group: jenkins
-    state: directory
-    mode: "0760"
+- name: Post install setup
+  import_tasks: post_install.yml
 
-- name: Copy across the initial docker config telling it to use pass as credential store
-  become: true
-  when: "'docker' in group_names"
-  ansible.builtin.copy:
-    src: "docker-config.json"
-    dest: "{{ jenkins_home }}/.docker/config.json"
-    owner: "{{ jenkins_user }}"
-    group: "{{ jenkins_user_group }}"
-
-- name: Check whether GPG keyring has been setup
-  become: True
-  ansible.builtin.shell: >
-    sudo -u jenkins gpg --list-keys | grep -q jenkins-ansible; echo $?
-  register: GPG_KEY_SETUP
-
-- name: Create a GPG keyring ansible use
-  when: GPG_KEY_SETUP.stdout == "1"
-  become: true
-  ansible.builtin.shell: >
-    sudo -u jenkins gpg --batch --passphrase '' --quick-gen-key jenkins-ansible default default
-
-- name: Initiate pass to ansible
-  when: GPG_KEY_SETUP.stdout == "1"
-  become: true
-  ansible.builtin.shell: >
-    sudo -u jenkins pass init jenkins-ansible
-
-- name: Check whether the Jenkins has been setup with the flag
-  become: true
-  ansible.builtin.stat:
-    path: "{{ jenkins_home }}/.setup_run"
-  register: jenkins_setup_run
-
-- name: Write setup Groovy script to Jenkins path for init
-  become: true
-  when: not jenkins_setup_run.stat.exists
-  ansible.builtin.template:
-    src: init.groovy.j2
-    dest: "{{ jenkins_home }}/init.groovy"
-    owner: "{{ jenkins_user }}"
-    group: "{{ jenkins_user_group }}"
-    mode: "0600"
-
-- name: Restart Jenkins Service to run the initial setup script
-  become: True
-  when: not jenkins_setup_run.stat.exists
-
-  ansible.builtin.systemd:
-    name: jenkins
-    state: restarted
-
-- name: Remove the initialisation script now run
-  become: true
-  ansible.builtin.file:
-    path: "{{ jenkins_home }}/init.groovy"
-    state: absent
-
-- name: Create Nginx rule
-  import_tasks: install_plugins.yml
-
-- name: Restart Jenkins to make sure everything is clean
-  become: True
-  ansible.builtin.systemd:
-    name: jenkins
-    state: restarted
-
-- name: Create a marker to show init setup complete
-  become: true
-  when: not jenkins_setup_run.stat.exists
-  ansible.builtin.file:
-    path: "{{ jenkins_home }}/.setup_run"
-    state: touch
 
 
 

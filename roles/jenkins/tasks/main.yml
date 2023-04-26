@@ -1,4 +1,8 @@
 ---
+- set_fact:
+    jenkins_fqcdn: "{{ jenkins_domain | default(jenkins_reference + '.' + fqcdn) }}"
+    jenkins_plugin_joined: "{{ jenkins_plugins | join(' ') }}"
+
 # The file is split like this for variable merging from role
 - name: jenkins | Super
   when:

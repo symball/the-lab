@@ -14,7 +14,7 @@ instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
 
 logger.info("Set Jenkins location configuration")
 def jenkinsLocationConfiguration = JenkinsLocationConfiguration.get()
-jenkinsLocationConfiguration.setUrl('https://{{ domain }}')
+jenkinsLocationConfiguration.setUrl('https://{{ jenkins_fqcdn }}')
 jenkinsLocationConfiguration.setAdminAddress('{{ jenkins_admin_email }}')
 jenkinsLocationConfiguration.save()
 

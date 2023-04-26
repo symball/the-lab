@@ -1,13 +1,16 @@
-jenkins_arch_java_version: 17
+jenkins_java_version: 17
+
 jenkins_arch_packages:
   - fontconfig
   - freetype2
-  - "jre{{ jenkins_arch_java_version }}-openjdk-headless"
+  - "jre{{ jenkins_java_version }}-openjdk-headless"
   - jenkins
 
 jenkins_cli_package_url: jnlpJars/jenkins-cli.jar
 
-jenkins_debian_java_package: openjdk-17-jre-headless
+jenkins_debian_packages:
+  - "openjdk-{{ jenkins_java_version }}-jre-headless"
+  - jenkins
 
 jenkins_reference: jenkins
 jenkins_port: 8080
