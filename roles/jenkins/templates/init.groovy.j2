@@ -1,0 +1,52 @@
+#!groovy
+
+import jenkins.model.*
+import hudson.security.*
+import jenkins.install.*;
+import java.util.logging.Logger
+
+def logger = Logger.getLogger("")
+def instance = Jenkins.getInstance()
+
+logger.info("Set Jenkins installation state to complete in order to skip wizard")
+instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+
+//logger.info("Installing some initial plugins")
+//def installed = false
+//def initialized = false
+//
+//def pluginParameter="{{ jenkins_plugin_joined }}"
+//def plugins = pluginParameter.split()
+//logger.info("" + plugins)
+//
+//def pm = instance.getPluginManager()
+//def uc = instance.getUpdateCenter()
+//plugins.each {
+//    logger.info("Checking " + it)
+//    if (!pm.getPlugin(it)) {
+//        logger.info("Looking UpdateCenter for " + it)
+//        if (!initialized) {
+//            uc.updateAllSites()
+//            initialized = true
+//        }
+//        def plugin = uc.getPlugin(it)
+//        if (plugin) {
+//            logger.info("Installing " + it)
+//            def installFuture = plugin.deploy()
+//            while(!installFuture.isDone()) {
+//                logger.info("Waiting for plugin install: " + it)
+//                sleep(3000)
+//            }
+//            installed = true
+//        }
+//    }
+//}
+
+logger.info("Create an initial admin user '{{ jenkins_admin_user_name }}'")
+def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+hudsonRealm.createAccount('{{ jenkins_admin_user_name }}','{{ jenkins_admin_user_pass }}')
+instance.setSecurityRealm(hudsonRealm)
+def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+instance.setAuthorizationStrategy(strategy)
+
+instance.save()

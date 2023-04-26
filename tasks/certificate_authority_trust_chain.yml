@@ -13,14 +13,14 @@
   become: true
   when: ansible_os_family == "Archlinux"
   ansible.builtin.copy:
-    src: "{{ ansible_working_path }}/ca-chain.cert.{{ certificate_authority_cert_format }}"
-    dest: "{{ temp_key_path.path }}/ca-chain.cert.{{ certificate_authority_cert_format }}"
+    src: "{{ ansible_working_path }}/intermediate.cert.{{ certificate_authority_cert_format }}"
+    dest: "{{ temp_key_path.path }}/{{ ansible_project_name }}-intermediate.cert.{{ certificate_authority_cert_format }}"
 
 - name: Run trust agent
   become: true
   when: ansible_os_family == "Archlinux"
   ansible.builtin.shell: >-
-    trust anchor --store {{ temp_key_path.path }}/ca-chain.cert.{{ certificate_authority_cert_format }}
+    trust anchor --store {{ temp_key_path.path }}/{{ ansible_project_name }}-intermediate.cert.{{ certificate_authority_cert_format }}
 
 - name: Cleanup the temporary file
   become: true
@@ -43,8 +43,8 @@
   become: true
   when: ansible_os_family == "Debian"
   ansible.builtin.copy:
-    src: "{{ ansible_working_path }}/ca-chain.cert.{{ certificate_authority_cert_format }}"
-    dest: "/usr/local/share/certificates/{{ ansible_project_name }}-ca-chain.crt"
+    src: "{{ ansible_working_path }}/intermediate.cert.{{ certificate_authority_cert_format }}"
+    dest: "/usr/local/share/ca-certificates/{{ ansible_project_name }}-intermediate.crt"
 
 - name: Run trust agent
   become: true

@@ -74,8 +74,11 @@ server {
       proxy_connect_timeout  90;
       proxy_send_timeout         90;
       proxy_read_timeout         90;
-      proxy_request_buffering off;
       proxy_cache_bypass $http_upgrade;
+
+      {% if proxy_location_rules is defined %}
+      {{ proxy_location_rules }}
+      {% endif %}
     }
 
     {% if letsencrypt %}

@@ -27,10 +27,6 @@
   vars:
     cert_domain: "{{ domain }}"
 
-- name: Domain name test
-  debug:
-    msg: "The domain name is {{ domain }}"
-
 - name: Push the generated certificates to where Nginx expects
   become: true
   when: nginx_use_internal_certificate_authority
