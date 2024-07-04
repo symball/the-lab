@@ -1,5 +1,7 @@
 ---
 - name: Archlinux_system_update | Update existing packages
   become: true
+  changed_when: false
   community.general.pacman:
     upgrade: true
+    update_cache: true

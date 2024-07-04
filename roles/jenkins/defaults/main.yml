@@ -104,3 +104,4 @@ jenkins_plugins:
   - "caffeine-api"
   - "bouncycastle-api"
   - "token-macro"
+  - "configuration-as-code"

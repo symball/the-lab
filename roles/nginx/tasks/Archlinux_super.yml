@@ -36,6 +36,7 @@
   ansible.builtin.group:
     name: "{{ nginx_user_group }}"
     state: present
+
 - name: Archlinux_super | Make sure there is an http user
   become: true
   ansible.builtin.user:

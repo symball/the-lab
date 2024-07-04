@@ -30,10 +30,11 @@
     name: docker
 
 - name: Install credential helper to keep registry logins secure
-  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
-  vars:
-    aur_packages:
-      - docker-credential-pass
-
-
+  when:
+    - yay_install
+  kewlfft.aur.aur:
+    name: docker-credential-pass
+    state: present
+  become: yes
+  become_user: "{{ aur_build_user }}"
 

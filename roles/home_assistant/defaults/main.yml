@@ -1,19 +1,18 @@
 ---
-home_assistant_packages:
+home_assistant_arch_packages:
   - home-assistant
   - mosquitto
   - python-mysqlclient
   - zigbee2mqtt
+  - zlib-ng
+
+home_assistant_reference: hass
 
 home_assistant_db_user: home_assistant
 home_assistant_db_pass: home_assistant
 home_assistant_db_name: home_assistant
 home_assistant_db_connection_string: >-
-  mysql://
-  {{ home_assistant_db_user }}:{{ home_assistant_db_pass }}
-  @localhost/
-  {{ home_assistant_db_name }}
-  ?unix_socket=/var/run/mysqld/mysqld.sock&charset=utf8mb4
+  postgresql://{{ home_assistant_db_user }}:{{ home_assistant_db_pass }}@localhost:5432/{{ home_assistant_db_name }}?sslmode=disable
 
 home_assistant_frontend_port: 8123
 
@@ -25,32 +24,34 @@ zigbee2mqtt_frontend_enabled: true
 zigbee2mqtt_frontend_port: 8080
 # Network settings
 
-zigbee2mqtt_network_key: "[1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 13]"
 # MQTT Settings
+zigbee2mqtt_base_topic: zigbee2mqtt
+# Important to override the following values for security purposes
+zigbee2mqtt_network_key: "[1, 3, 5, 7, 9, 11, 13, 15, 0, 2, 4, 6, 8, 10, 12, 13]"
 zigbee2mqtt_port: 1883
 zigbee2mqtt_user: zigbee2mqtt
 zigbee2mqtt_pass: zigbee2mqtt
 
-zigbee_dongle_path: /dev/serial/by-id/usb-Texas_Instruments_TI_CC2531_USB_CDC___0X00124B0014D9B6F3-if00
+zigbee_dongle_path:
 
 zigbeedevices:
-  - id: "0x00178801098c8e94"
-    friendly_name: office_desk
-  - id: "0x00178801098c8f11"
-    friendly_name: office_shelf
-  - id: "0x00158d00058bbe9e"
-    friendly_name: living_room_tv_kitchen
-  - id: "0x00158d00058bbc98"
-    friendly_name: living_room_balcony_tv
-  - id: "0x00158d00058a0158"
-    friendly_name: living_room_balcony_sofa
-  - id: "0x00158d00058bbcb7"
-    friendly_name: living_room_sofa_door
-  - id: "0x00178801093e68d3"
-    friendly_name: bedroom_bedside
-  - id: "0x00158d00058b6ce1"
-    friendly_name: bedroom_lamp_lower
-  - id: "0x00158d00058b6ea4"
-    friendly_name: bedroom_lamp_upper
-  - id: "0x00124b0021f27479"
-    friendly_name: living_room_led_strip
+#  - id: "0x00178801098c8e94"
+#    friendly_name: office_desk
+#  - id: "0x00178801098c8f11"
+#    friendly_name: office_shelf
+#  - id: "0x00158d00058bbe9e"
+#    friendly_name: living_room_tv_kitchen
+#  - id: "0x00158d00058bbc98"
+#    friendly_name: living_room_balcony_tv
+#  - id: "0x00158d00058a0158"
+#    friendly_name: living_room_balcony_sofa
+#  - id: "0x00158d00058bbcb7"
+#    friendly_name: living_room_sofa_door
+#  - id: "0x00178801093e68d3"
+#    friendly_name: bedroom_bedside
+#  - id: "0x00158d00058b6ce1"
+#    friendly_name: bedroom_lamp_lower
+#  - id: "0x00158d00058b6ea4"
+#    friendly_name: bedroom_lamp_upper
+#  - id: "0x00124b0021f27479"
+#    friendly_name: living_room_led_strip

@@ -9,5 +9,6 @@
 - name: Debian_super | Hostname
   ansible.builtin.import_tasks: set_hostname.yml
 - name: Debian_super | host aliases
+  when: set_inventory_hosts
   ansible.builtin.import_tasks: set_inventory_hosts.yml
 

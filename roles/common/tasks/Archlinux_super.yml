@@ -18,5 +18,6 @@
 - name: Archlinux_super | Hostname
   ansible.builtin.import_tasks: set_hostname.yml
 - name: Archlinux_super | Host aliases
+  when: set_inventory_hosts
   ansible.builtin.import_tasks: set_inventory_hosts.yml
 

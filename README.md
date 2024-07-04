@@ -1,32 +1,20 @@
-# The Lab
+# Home Infra
 
-This project is for setting up and managing a lab environment to run full end-to-end business services including management and deployment of code. With minor modification and enhanced management of the default configuration, the services can be [used in a production setting](./docs/production.md). The following operating systems (with [identifiers](./docs/identifiers.md)) are supported:
-
-* Armbian (`Debian_aarch64`)
-* Arch Linux (`Archlinux_x86_64`)
-* Debian Bullseye 11 (`Debian_11_x86_64`)
-* Ubuntu Focal LTS 22.04 (`Debian_22_x86_64`)
-
-The playbooks included within this project stem from how I configure my home environment. I have decided to make them public in order to support a new blog series about developers I am starting. Be sure to checkout [simonball.me](https://simonball.me) for more information and a more guided explanation of how to make best use of this project.
-
-Summarized, these playbooks will assist you to:
+This project is for setting up and managing my home infrastructure and lab
 
 * Configure your main workstation as a developer box, including virtualisation through [KVM](https://www.google.com/search?client=firefox-b-d&q=kvm) over [libvirt](https://libvirt.org/)
 * Deploy and manage [Public Key Infrastructure](https://en.wikipedia.org/wiki/Public_key_infrastructure) through a self deployed certificate authority
-* deploy a self hosted [code repository](https://forgejo.org/) and [container registry](https://docs.docker.com/registry/)
-* Deploy a [automation server](https://www.jenkins.io/) to automatically build, deploy and, manage your services
 * Create [network ingress](https://www.nginx.com/) for delivery of your services
-* Deploy and manage [MariaDB](https://mariadb.org/) / [PostgreSQL](https://www.postgresql.org/)
+* Deploy and manage [PostgreSQL](https://www.postgresql.org/)
 * Install support for various programming lanaguages: [NodeJS](https://nodejs.org/en) via NVM, [Go](https://go.dev/), [Python](https://www.python.org/) via Conda and [Rust](https://www.rust-lang.org/)
-* Install [Home Assistant](https://www.home-assistant.io/) for interacting with and controlling Smart spaces
 
 ## Prerequisites
 
-The only hard requirements to use this project are having [Ansible](https://www.ansible.com/) and an SSH client (most likely [OpenSSH](https://www.openssh.com/)) installed.
+The only hard requirements to use this project are having [Ansible](https://www.ansible.com/) and openssh.
 
-## Quickstart
+## Getting Started
 
-If you are planning to use this as a development environment, there is a bootstrap script to help you get started which will prepare your main device as a virtualisation server, create the virtual machines on your behalf and, prepare an initial inventory.
+There is a bootstrap script to help you get started which will prepare your main device as a virtualisation server, create the virtual machines on your behalf and, prepare an initial inventory.
 
 Running the bootstrap script will:
 
@@ -35,9 +23,6 @@ Running the bootstrap script will:
 * Create a barebones inventory file for you to customize. Read [The Environment](#the-environment)
 
 ```shell
-# Install extra Ansible modules
-ansible-galaxy install -r requirements.yml
-
 # Show full usage for the bootstrap script
 ./bootstrap.sh --help
 
@@ -58,9 +43,9 @@ ansible-galaxy install -r requirements.yml
 ./bootstrap.sh -pw='my_system_password!' -ncpu=4 -nram=8192 -nd=2 -na=2 -nu=2
 ```
 
-You can rerun the `bootstrap` script as many times as you like to autostart your VMs; it will only be destructive in the event you change configuration options. This means you can with one line boot up your environment fully after system restart. 
+When the bootstrap script completes, a `.bootstrap_config` file is created in your project root saving chosen options related to your Virtual Machines. This allows you to rerun the bootstrap script without any options to bring up your environment quickly. If you would like to reset your environment, delete the file. 
 
-## The Environment
+## Environment Configuration
 
 This section will assume you have used the bootstrap script, are familiar with the basics of [setting up an Ansible inventory](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html) and understand how [Ansible manages secrets](https://docs.ansible.com/ansible/latest/vault_guide/index.html) so, will focus on the need-to-know information to setup a complete IT environment. For expanded information on each capability and configuration options, you are encouraged to [read the roles](./docs/roles.md) documentation.
 
@@ -151,7 +136,7 @@ Things to note about the above:
   * `certificate_authority`: Using openssl, creates a root and intermediate certificate authority for generating SSH certificates to be used during service deployment. Using `tasks/certificate_authority_trust_chain.yml`, the chain certificate is automatically deployed to each device within your inventory. In short, your system will trust your Ansible deployments; your browser won't require you to add any self-signed certificate exceptions
   * `nginx`: To act as an ingress / reverse proxy for your various services, it will run secure and as a low privilege user
 
-## The CICD services
+## Application services
 
 With your base environment defined, it's time to add some services. The premise behind this project is to get you hosting and running your own CICD system so  append the following roles to your inventory:
 
@@ -179,14 +164,38 @@ children:
 
 Now, go ahead and run `ansible-playbook -i ./inventory.yml main.yml`. It may take a while but, once finished, you should be able to visit:
 
-* [forgejo.virt-ubu-0.com](https://forgejo.virt-ubu-0.com) to start hosting code on your self hosted alternative to github
-* [jenkins.virt-arch-0.com](https://jenkins.virt-arch-0.com) to start automating your development and deployment workflows
+* [git.virt-ubu-0.com](https://git.virt-ubu-0.com) to start hosting code on your self hosted alternative to github
+* [jenkins.virt-arch-0.com](https://jenkins.virt-arch-0.com) to start automating your development and deployment workflows. Plugins are automatically installed and an admin user created as part of the Ansible deployment using `jenkins_admin_user_name` (default: admin) and `jenkins_admin_user_pass` (default: development) variables from the role 
 
-**NOTE** The first time you run Jenkins, it will require you to input an autogenerated password in to the web interface to verify you have legitimate access to the device. This can be attained by running the following:
+## A CICD workflow
+
+In this section, we're going to leverage [Jenkins](https://www.jenkins.io/) and [Forgejo](https://forgejo.org/) to create your first gitops CICD workflow to deploy a full stack project. The tasks we'll perform are:
+
+### Preparing GIT
+
+As this will be your first run of the application services, you'll first need to create an account for [git.virt-ubu-0.com](https://git.virt-ubu-0.com).
+
+We will also use SSH instead of https when interacting with GIT for better security and simplified management. Let's go ahead and create two keys on our `main_workstation`: one for us as a developer and one for Jenkins to use during automation which we'll create in just a moment
 
 ```shell
-ssh -i $HOME/.ssh/thelab-master $(whoami)@virt-debian-0.com 'sudo cat /var/lib/jenkins/secrets/initialAdminPassword'
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/personal-infra-forgejo-developer -N ""
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/personal-infra-forgejo-jenkins -N ""
 ```
+
+Configure SSH so that GIT will automatically use our developer key when interacting with forgejo, place the following lines exist in `~/.ssh/config`:
+
+```text
+Host git.virt-ubu-0.com
+    IdentityFile ~/.ssh/personal-infra-forgejo-developer
+```
+
+Next, we're going to configure SSH access from forgejo. Copy the contents of the public key (`~/.ssh/personal-infra-forgejo-developer.pub`) to your clipboard; either manually or using xclip `xclip -sel c < ~/.ssh/personal-infra-forgejo-developer.pub`. From within the web interface, go to your user settings -> SSH / GPG Keys page ([git.virt-ubu-0.com/user/settings/keys](https://git.virt-ubu-0.com/user/settings/keys)), paste the key in to the content box, and click save.
+
+We can test the key has been created by generating a trust signature. Clicking the Verify button from the keys management page which should now show our newly created key. Follow the given instructions on your main_workstation where the keys were created. Note that there is a time limit for the challenge so, if you get an error message about invalid key, try again and complete the signature challenge faster.
+
+With our development user configured, Sign out of forgejo and create  
+
+next we'll create organisation within forgejo to host our repositories; this step is optional but makes management much simpler. Click the New button in the top right toolbar (indicated by `+`) and select organisation. For this guide, I'll call the organisation `symbolic`.
 
 ## Controlling the workflow
 

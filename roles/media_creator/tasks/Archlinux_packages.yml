@@ -1,0 +1,14 @@
+---
+- name: media_creator | Install packages
+  become: true
+  community.general.pacman:
+    name: "{{ media_creator_arch_packages }}"
+
+- name: media_creator | Install AUR packages if helper enabled
+  when:
+    - yay_install
+  kewlfft.aur.aur:
+    name: "{{ media_creator_arch_aur_packages }}"
+    state: present
+  become: yes
+  become_user: "{{ aur_build_user }}"

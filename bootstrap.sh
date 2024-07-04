@@ -1,75 +1,57 @@
 #!/usr/bin/env bash
+
+WORKING_PATH=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 #!/
 #!/# Author Simon Ball <open-source@simonball.me>
 # A short shell script used to bootstrap services
+. ${WORKING_PATH}/provisioning/utils/bash_functions.sh
 
+echo "${green}--=== Environment Bootstrap Script ===--${reset}"
+echo ""
+echo "Working Path: ${WORKING_PATH}"
+
+set -e
+set -o pipefail
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        OPERATING_SYSTEM=linux
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+        OPERATING_SYSTEM=mac
+else
+        halt "Unsupported Operating system"
+fi
 #
 # DEFAULTS.
 #
+BOOTSTRAP_CONFIG="${WORKING_PATH}/.bootstrap_config"
+
+echo ""
+echo Checking for existing state
+if test -f $BOOTSTRAP_CONFIG; then
+  ALREADY_RUN=true
+  echo Existing file found
+else
+ echo Copying from develop template
+ cp "${BOOTSTRAP_CONFIG}.develop" ${BOOTSTRAP_CONFIG}
+fi
+source ${BOOTSTRAP_CONFIG}
 MASTER_USER="$(whoami)"
-SSH_KEY_MASTER_PATH="$HOME/.ssh/thelab-master"
-COMMON_USER="jeeves"
-SSH_KEY_COMMON_PATH="$HOME/.ssh/thelab-common"
-SUDO_PASSWORD=''
-ARCH_NODES=1
-DEBIAN_NODES=1
-UBUNTU_NODES=1
-CPU_PER_NODE=2
-RAM_PER_NODE=4096
-
-VERBOSE=true
-WORKING_PATH=$(pwd)
-ARTIFACTS_PATH="${WORKING_PATH}/provisioning/artifacts"
+SSH_KEY_MASTER_PATH="$HOME/.ssh/${WORKSPACE_NAME}-master"
+SSH_KEY_COMMON_PATH="$HOME/.ssh/${WORKSPACE_NAME}-common"
+PROVISIONING_PATH="${WORKING_PATH}/provisioning"
+TEMPLATE_PATH="${PROVISIONING_PATH}/templates"
+UTILS_PATH="${PROVISIONING_PATH}/utils"
 HOSTNAME=$(cat /etc/hostname)
-BOOTSTRAP_CONFIG="./.bootstrap_config"
 ALREADY_RUN=false
-
-red=`tput setaf 1`
-green=`tput setaf 2`
-reset=`tput sgr0`
+ok
 #
 # ENVIRONMENT SPECIFIC. This is the section you will want to change
 #
 REQUIRED_PROGRAMS="ansible ssh"
 
-echo "${green}--=== VM Bootstrap Script ===--${reset}"
+echo "${green}--=== Environment Bootstrap Script ===--${reset}"
 echo ""
-set -e
-set -o pipefail
-#
-# HALT
-#
-# Safe method for stopping dev environment. If running the main
-# process in foreground, will also shutdown services
-#
-halt() {
-  echo "${red}--=== HALTING ===--${reset}"
-  echo ""
-  echo "${green}$1${reset}"
-  exit 1
-}
-
-trap halt SIGHUP SIGINT SIGTERM
-
-# Function to check whether command exists or not
-exists()
-{
-  if command -v $1 &>/dev/null
-    then return 0
-    else return 1
-  fi
-}
-
-path_exists() {
-  if [ -d $1 ]
-    then return 0
-    else return 1
-  fi
-}
-
-ok() {
-  echo -e " ${green}OK${reset}"
-}
 
 # Command help
 display_usage() {
@@ -132,23 +114,19 @@ for argument in "$@"; do
   shift
 done
 
-# Check if the bootstrap script has previously complete in order to customize parts of the script for continued operation
-if test -f $BOOTSTRAP_CONFIG; then
-  ALREADY_RUN=true
-  source $BOOTSTRAP_CONFIG
-  echo ""
-  echo "${red}Detected existing configuration. To reset your environment, delete the ${BOOTSTRAP_CONFIG} file${reset}"
-  echo ""
-fi
-
 # Check whether the required programs installed
 [ "$VERBOSE" = true ] && echo "---=== Checking required programs ===---"
 for PROGRAM in $REQUIRED_PROGRAMS; do
-  if exists $PROGRAM; then
+  if command_exists $PROGRAM; then
     [ "$VERBOSE" = true ] && echo -ne "$PROGRAM" && ok
   else halt "$PROGRAM Required"
   fi
 done
+
+if [ "$ALREADY_RUN" = false ]; then
+  spacer "Install Ansible Galaxy requirements"
+  ansible-galaxy install -r requirements.yml
+fi
 
 #
 # Prelim
@@ -162,7 +140,6 @@ fi
 #
 # INITIAL PREPARATION
 #
-
 if [ "$ALREADY_RUN" = false ]; then
   echo ""
   echo Creating an initial inventory file to prepare your device
@@ -171,12 +148,12 @@ if [ "$ALREADY_RUN" = false ]; then
   SUDO_PASSWORD=$SUDO_PASSWORD \
   MASTER_USER=$MASTER_USER \
   SSH_KEY_MASTER_PATH=$SSH_KEY_MASTER_PATH \
-  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/initial_inventory.yml.m2 > inventory.yml
+  ${UTILS_PATH}/mo --source=./.bootstrap_config ${TEMPLATE_PATH}/initial_inventory.yml.m2 > ${WORKSPACE_NAME}-inventory.yml
   else
   OPEN="{{" CLOSE="}}" HOSTNAME=${HOSTNAME} \
   MASTER_USER=$MASTER_USER \
   SSH_KEY_MASTER_PATH=$SSH_KEY_MASTER_PATH \
-  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/initial_inventory.yml.m2 > inventory.yml
+  ${UTILS_PATH}/mo --source=./.bootstrap_config ${TEMPLATE_PATH}/initial_inventory.yml.m2 > ${WORKSPACE_NAME}-inventory.yml
   fi
 fi
 
@@ -210,17 +187,16 @@ if [ "$ALREADY_RUN" = false ]; then
   COMMON_USER=${COMMON_USER} \
   SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH} \
   SSH_KEY_COMMON_PATH=${SSH_KEY_COMMON_PATH} \
-  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/group_vars.yml.m2 > group_vars/all.yml
+  ${UTILS_PATH}/mo --source=./.bootstrap_config ${TEMPLATE_PATH}/group_vars.yml.m2 > group_vars/all.yml
 fi
 
 if [ "$ALREADY_RUN" = false ]; then
-  echo ""
-  echo "Provisioning THIS device"
-  ansible-playbook -i ./inventory.yml main.yml
+  spacer "Provisioning THIS device"
+  ansible-playbook -i ./${WORKSPACE_NAME}-inventory.yml main.yml
 fi
 
 if [[ $USER_IN_LIBVIRT == false ]]; then
-  echo "${red}Intervention possibly required${reset}"
+  spacer "${red}Intervention required${reset}"
   echo "This seems to be your first run, you didn't seem to be in the libvirt"
   echo "Ansible just setup KVM/QEMU on your device and this would have"
   echo "modified your user groups"
@@ -233,11 +209,10 @@ if [ "$ALREADY_RUN" = false ]; then
   OPEN="{{" CLOSE="}}" \
   MASTER_USER=${MASTER_USER} \
   SSH_PUBLIC_MASTER_KEY=${SSH_PUBLIC_MASTER_KEY} \
-  ${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/cloud_init.cfg.m2 > ${WORKING_PATH}/provisioning/terraform_libvirt/cloud_init.cfg
+  ${UTILS_PATH}/mo --source=./.bootstrap_config ${TEMPLATE_PATH}/cloud_init.cfg.m2 > ${WORKING_PATH}/provisioning/terraform_libvirt/cloud_init.cfg
 fi
 
-echo ""
-echo "Creating virtual machines"
+spacer "Virtual machines"
 cd ${WORKING_PATH}/provisioning/terraform_libvirt
 if [ "$ALREADY_RUN" = false ]; then
   terraform init
@@ -248,7 +223,9 @@ terraform apply --auto-approve \
  -var "debian_node_count=$DEBIAN_NODES" \
  -var "ubuntu_node_count=$UBUNTU_NODES" \
  -var "cpu_per_node=$CPU_PER_NODE" \
- -var "ram_per_node=$RAM_PER_NODE"
+ -var "ram_per_node=$RAM_PER_NODE" \
+ -var "disk_per_node=$DISK_PER_NODE" \
+ -var "workspace_name=$WORKSPACE_NAME"
 cd $WORKING_PATH
 
 if [ "$ALREADY_RUN" = false ]; then
@@ -258,19 +235,19 @@ if [ "$ALREADY_RUN" = false ]; then
   ARCH_VMS='( '
   for ((x=0; x<$ARCH_NODES; x++))
   do
-  ARCH_VMS="$ARCH_VMS"$x","
+  ARCH_VMS="$ARCH_VMS"$x" "
   done
   ARCH_VMS="${ARCH_VMS%,} )"
   DEBIAN_VMS='( '
   for ((x=0; x<$DEBIAN_NODES; x++))
   do
-  DEBIAN_VMS="$DEBIAN_VMS"$x","
+  DEBIAN_VMS="$DEBIAN_VMS"$x" "
   done
   DEBIAN_VMS="${DEBIAN_VMS%,} )"
   UBUNTU_VMS='( '
   for ((x=0; x<$UBUNTU_NODES; x++))
   do
-  UBUNTU_VMS="$UBUNTU_VMS"$x","
+  UBUNTU_VMS="$UBUNTU_VMS"$x" "
   done
   UBUNTU_VMS="${UBUNTU_VMS%,} )"
 
@@ -280,10 +257,13 @@ if [ "$ALREADY_RUN" = false ]; then
   export HOSTNAME=${HOSTNAME}
   export MASTER_USER=${MASTER_USER}
   export SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH}
-  export SUDO_PASSWORD=$SUDO_PASSWORD
-  export ARCH_VMS=${ARCH_VMS}
-  export DEBIAN_VMS=${DEBIAN_VMS}
-  export UBUNTU_VMS=${UBUNTU_VMS}
+  export SUDO_PASSWORD='$SUDO_PASSWORD'
+  export ARCH_VMS=$([[ $ARCH_NODES -ne 0 ]] && echo $ARCH_NODES || echo "")
+  export DEBIAN_VMS=$([[ $DEBIAN_NODES -ne 0 ]] && echo $DEBIAN_NODES || echo "")
+  export UBUNTU_VMS=$([[ $UBUNTU_NODES -ne 0 ]] && echo $UBUNTU_NODES || echo "")
+  export ARCH_VMS_MAP=${ARCH_VMS}
+  export DEBIAN_VMS_MAP=${DEBIAN_VMS}
+  export UBUNTU_VMS_MAP=${UBUNTU_VMS}
   """ > temp
   else
   echo """export OPEN="{{"
@@ -291,37 +271,23 @@ if [ "$ALREADY_RUN" = false ]; then
   export HOSTNAME=${HOSTNAME}
   export MASTER_USER=${MASTER_USER}
   export SSH_KEY_MASTER_PATH=${SSH_KEY_MASTER_PATH}
-  export ARCH_VMS=${ARCH_VMS}
-  export DEBIAN_VMS=${DEBIAN_VMS}
-  export UBUNTU_VMS=${UBUNTU_VMS}
+  export ARCH_VMS=$([[ $ARCH_NODES -ne 0 ]] && echo $ARCH_NODES || echo "")
+  export DEBIAN_VMS=$([[ $DEBIAN_NODES -ne 0 ]] && echo $DEBIAN_NODES || echo "")
+  export UBUNTU_VMS=$([[ $UBUNTU_NODES -ne 0 ]] && echo $UBUNTU_NODES || echo "")
+  export ARCH_VMS_MAP=${ARCH_VMS}
+  export DEBIAN_VMS_MAP=${DEBIAN_VMS}
+  export UBUNTU_VMS_MAP=${UBUNTU_VMS}
   """ > temp
   fi
-  ${ARTIFACTS_PATH}/mo --source=temp ${ARTIFACTS_PATH}/inventory.yml.m2 > inventory.yml
+  ${UTILS_PATH}/mo --source=temp ${TEMPLATE_PATH}/inventory.yml.m2 > ${WORKSPACE_NAME}-inventory.yml
   rm temp
 fi
 
-if [ "$ALREADY_RUN" = false ]; then
-  echo ""
-  echo "Install Ansible Galaxy requirements"
-  ansible-galaxy install -r requirements.yml
-fi
-
-echo ""
-echo "Saving bootstrap config to $BOOTSTRAP_CONFIG"
-ARCH_NODES=$ARCH_NODES \
-DEBIAN_NODES=$DEBIAN_NODES \
-UBUNTU_NODES=$UBUNTU_NODES \
-CPU_PER_NODE=$CPU_PER_NODE \
-RAM_PER_NODE=$RAM_PER_NODE \
-${ARTIFACTS_PATH}/mo ${ARTIFACTS_PATH}/bootstrap_config.m2 > $BOOTSTRAP_CONFIG
-
-echo ""
-echo "${green}--=== Environment Ready! ===--${reset}"
-echo ""
+spacer "${green}--=== Environment Ready! ===--${reset}"
 echo "Go forth and be awesome! Don't forget to customize your inventory"
 echo ""
 echo "${red}If you are planning to use the deployed services in production!${reset}"
 echo "Don't forget to also customize your variables and create secrets!"
 echo "See README.md for more information"
 echo ""
-echo "Run ${green}ansible-playbook -i ./inventory.yml main.yml${reset}"
+echo "Run ${green}ansible-playbook -i ./${WORKSPACE_NAME}-inventory.yml main.yml${reset}"

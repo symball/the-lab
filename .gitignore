@@ -1,8 +1,12 @@
-.terraform*
-terraform.tfstate*
-inventory.yml
-cloud_init.cfg
-group_vars/all.yml
+# Vault password
+vault_pass
+live-vars.yml
+provisioning/.terraform*
+provisioning/terraform_libvirt
+provisioning/terraform.tfstate*
+provisioning/cloud_init.cfg
+*inventory.yml
+*vars.yml
 .bootstrap_config
 
 # Logs

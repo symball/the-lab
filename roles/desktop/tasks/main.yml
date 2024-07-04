@@ -2,6 +2,7 @@
 - name: desktop | Super
   when:
     - is_super | bool
+    - not include_only_deployed_apps
     - include_desktop_management
   ansible.builtin.include_tasks:
     file: "{{ item }}"

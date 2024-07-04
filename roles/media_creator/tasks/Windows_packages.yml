@@ -1,0 +1,5 @@
+---
+- name: windows_packages | Install packages
+  win_chocolatey:
+    name: "{{ media_creator_windows_chocolatey_packages }}"
+    state: present

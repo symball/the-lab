@@ -22,19 +22,12 @@
     name: "{{ desktop_arch_font_packages }}"
 
 - name: packages | Install AUR packages if helper enabled
-  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
   when: yay_install
-  vars:
-    aur_packages: "{{ desktop_arch_aur_packages }}"
-
-- name: packages | Install Jetbrains Toolbox
-  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
-  when:
-    - yay_install
-    - desktop_use_intellij
-  vars:
-    aur_packages:
-      - jetbrains-toolbox
+  kewlfft.aur.aur:
+    name: "{{ desktop_arch_aur_packages }}"
+    state: present
+  become: yes
+  become_user: "{{ aur_build_user }}"
 
 - name: super | Install Nvidia tools
   when:

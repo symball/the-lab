@@ -1,0 +1,7 @@
+- name: Debian_docker | Add VSCode APT repository
+  become: True
+  apt_repository:
+    repo: >-
+      deb
+      https://packages.microsoft.com/repos/vscode stable main
+    state: present

@@ -5,14 +5,14 @@ permit_join: true
 
 # MQTT settings
 mqtt:
-  base_topic: zigbee2mqtt
+  base_topic: {{ zigbee2mqtt_base_topic }}
   server: mqtt://localhost:{{ zigbee2mqtt_port }}
-  user: {{ zigbee2mqtt_user }}
-  password: {{ zigbee2mqtt_pass }}
+  user: '!secret.yaml zigbee2mqtt_user'
+  password: '!secret.yaml zigbee2mqtt_pass'
 
 advanced:
   adapter_concurrent: {{ zigbee2mqtt_adapter_concurrent }}
-  network_key: '!secret.yaml network_key'
+  network_key: '!secret.yaml zigbee2mqtt_network_key'
   transmit_power: {{ zigbee2mqtt_adapter_transmit_power }}
 
 {% if zigbee2mqtt_frontend_enabled %}
@@ -25,11 +25,14 @@ external_converters:
 
 # Serial settings
 serial:
+  disable_led: true
   # Location of CC2531 USB sniffer
   port: {{ zigbee_dongle_path }}
 
+{% if zigbeedevices %}
 devices:
 {% for device in zigbeedevices %}
   '{{ device.id }}':
     friendly_name: '{{ device.friendly_name }}'
 {% endfor %}
+{% endif %}

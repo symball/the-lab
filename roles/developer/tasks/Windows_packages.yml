@@ -1,10 +1,5 @@
 ---
-- name: desktop | Install packages
+- name: windows_packages | Install packages
   win_chocolatey:
-    name: "{{ desktop_windows_chocolatey_packages }}"
-    state: present
-
-- name: desktop | Install font packages
-  win_chocolatey:
-    name: "{{ desktop_windows_chocolatey_font_packages }}"
+    name: "{{ developer_windows_chocolatey_packages }}"
     state: present

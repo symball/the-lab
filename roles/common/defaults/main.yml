@@ -6,16 +6,22 @@ yay_version: master
 aur_build_user: aurbuilder
 
 common_arch_packages:
+  - base
   - base-devel
   - coreutils
   - croc
   - git
   - jq
+  - linux
+  - linux-firmware
   - lynis
+  - nano
   - pacman-contrib
   - p7zip
   - pass
   - sudo
+  - tar
+  - unzip
 
 common_arch_rich_shell_packages:
   - awesome-terminal-fonts

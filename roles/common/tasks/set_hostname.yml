@@ -1,4 +1,5 @@
 ---
 - name: set_hostname | Set to match Ansible Inventory
+  become: true
   ansible.builtin.hostname:
     name: "{{ ansible_hostname }}"

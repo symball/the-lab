@@ -1,21 +1,35 @@
 ---
-developer_use_intellij: true
 
-desktop_arch_packages:
+developer_arch_packages:
+  - android-tools
+  - android-udev
+  - buf
   - code
   - dbeaver
   - dbeaver-plugin-svg-format
-  - mysqlworkbench
-  - pgadmin4
+  - graphviz
+  - kruler
+  - kubectl
+  - minikube
+  - ngrok
+  - protobuf
+#  - podman
+#  - buildah
+#  - podman-compose
   
-desktop_arch_aur_packages:
+developer_arch_aur_packages:
   - code-features
   - code-marketplace
+  - drawio-desktop-bin
   - insomnia
-  - rdm-bin
+  - intellij-idea-ultimate-edition
+  - mise
+  - postman-bin
+  - redisinsight
   - stoplight-studio-appimage
-  
+  - usbimager
+  - zenmap
 
-desktop_windows_chocolatey_packages:
+developer_windows_chocolatey_packages:
   - dbeaver
   - vscode

@@ -1,4 +1,0 @@
-nvm_path: /opt/nvm
-nvm_version: "v0.39.3"
-nvm_node_lts_version: gallium
-nvm_debian_group: nvm

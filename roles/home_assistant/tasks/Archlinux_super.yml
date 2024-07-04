@@ -1,31 +1,39 @@
 ---
+- set_fact:
+    db_host: "{{ hostvars[groups['postgresql'][0]].inventory_hostname_short }}"
+    db_port: "{{ hostvars[groups['postgresql'][0]]['postgresql_port'] }}"
+    domain: "{{ home_assistant_domain | default(home_assistant_reference + '.' + fqcdn) }}"
+
+- name: super | Check if zigbee config file exists so we don't overwrite
+  become: true
+  ansible.builtin.stat:
+    path: /var/lib/zigbee2mqtt/configuration.yaml
+  register: zigbee2mqtt_config_present
+
 - name: super | Install Home Assistant packages
   become: true
   community.general.pacman:
-    name: "{{ home_assistant_packages }}"
+    name: "{{ home_assistant_arch_packages }}"
 
 - name: super | Create the backend database user
-  ansible.builtin.import_tasks: tasks/mariadb_setup_user_db.yml
+  delegate_to: "{{ db_host }}"
+  ansible.builtin.import_tasks: tasks/postgresql_setup_user_db.yml
   vars:
+    host: "{{ db_host }}"
     user_name: "{{ home_assistant_db_user }}"
     user_pass: "{{ home_assistant_db_pass }}"
     schema: "{{ home_assistant_db_name }}"
-
-- name: super | Install home-assistant frontened
-  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
-  vars:
-    aur_packages:
-      - python-home-assistant-frontend
 
 - name: super | Enable Mosquitto MQTT broker
   become: true
   ansible.builtin.systemd:
     enabled: true
     state: started
-    name: zigbee2mqtt
+    name: mosquitto
 
 - name: super | Write Zigbee2MQTT configuration
   become: true
+  when: not zigbee2mqtt_config_present.stat.exists
   ansible.builtin.template:
     src: zigbee2mqtt-configuration.yaml.j2
     dest: /var/lib/zigbee2mqtt/configuration.yaml
@@ -35,6 +43,7 @@
 
 - name: super | Write Zigbee2MQTT secrets
   become: true
+  when: not zigbee2mqtt_config_present.stat.exists
   ansible.builtin.template:
     src: zigbee2mqtt-secret.yaml.j2
     dest: /var/lib/zigbee2mqtt/secret.yaml
@@ -72,6 +81,12 @@
     dest: /etc/systemd/system/home-assistant.service.d/override.conf
     mode: "0644"
 
+- name: super | Ensure home assistant user group present
+  become: True
+  group:
+    name: hass
+    state: present
+
 - name: super | Add a system user and group for Home Assistant
   become: true
   ansible.builtin.user:
@@ -79,6 +94,14 @@
     group: hass
     shell: /usr/bin/nologin
     system: true
+
+- name: super | Install support for PostgreSQL within Home Assistant venv
+  become: True
+  ansible.builtin.command:
+    cmd: >
+      sudo -u hass /var/lib/hass/.venv/bin/python
+      -m pip install psycopg2 isal
+
 
 - name: super | Enable Home Assistant with a daemon-reload to pickup changes
   become: true
@@ -93,24 +116,37 @@
   ansible.builtin.wait_for:
     path: /var/lib/hass/configuration.yaml
 
-- name: super | Configuration block to use MariaDB instead of SQLite
+- name: super | Configuration block to use Postgresql instead of SQLite
   become: true
   ansible.builtin.blockinfile:
     path: /var/lib/hass/configuration.yaml
-    marker: "# {mark} ANSIBLE MARIADB_RECORDER"
+    marker: "# {mark} ANSIBLE POSTGRESQL_RECORDER"
     block: |
       recorder:
-        db_url: !secret recorder_mariadb_url
+        db_url: !secret recorder_postgresql_url
 
-- name: super | MariaDB access secret
+- name: super | Postgresql access secret
   become: true
   ansible.builtin.blockinfile:
     path: /var/lib/hass/secrets.yaml
-    block: 'recorder_mariadb_url: "{{ home_assistant_db_connection_string }}"'
-    marker: "# {mark} ANSIBLE MARIADB_CREDENTIALS"
+    block: 'recorder_postgresql_url: "{{ home_assistant_db_connection_string }}"'
+    marker: "# {mark} ANSIBLE POSTGRESQL_CREDENTIALS"
 
-- name: super | Restart Home Assistant to pickup MariaDB
+- name: super | Restart Home Assistant to pickup config changes
   become: true
   ansible.builtin.systemd:
     state: restarted
     name: home-assistant
+
+- name: Create a reverse proxy service
+  import_tasks: tasks/nginx_reverse_proxy.yml
+  vars:
+    reference: "{{ home_assistant_reference }}"
+    domain: "{{ domain }}"
+    letsencrypt: "{{ nginx_facade_use_certbot }}"
+    app_port: "{{ home_assistant_frontend_port }}"
+    proxy_extra_root_rules: |
+      map $http_upgrade $connection_upgrade {
+          default upgrade;
+          ''      close;
+      }

@@ -1,5 +1,7 @@
 ansible_controller_arch_packages:
   - ansible
+  - ansible-core
+  - ansible-lint
   - python-docker
   - python-mysql-connector
 

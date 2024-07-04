@@ -1,0 +1,17 @@
+#
+# Runtime options
+#
+WORKSPACE_NAME="vm-dev"
+COMMON_USER="jeeves"
+# If your local system requires password to use sudo, place password here
+SUDO_PASSWORD=''
+VERBOSE=true
+#
+# Device definitions
+#
+ARCH_NODES=0
+DEBIAN_NODES=0
+UBUNTU_NODES=3
+CPU_PER_NODE=4
+DISK_PER_NODE=21474836480
+RAM_PER_NODE=8192

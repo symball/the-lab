@@ -1,7 +1,0 @@
-- name: Install AUR package
-  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
-  when:
-    - yay_install
-  vars:
-    aur_packages:
-      - nvm

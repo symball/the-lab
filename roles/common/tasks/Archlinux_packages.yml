@@ -3,6 +3,8 @@
   become: true
   community.general.pacman:
     name: "{{ common_arch_packages }}"
+     # Auto confirm replace
+    extra_args: --ask 4
 
 - name: Archlinux_packages | Replace iptables-legacy with iptables-nft
   become: true

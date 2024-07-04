@@ -43,8 +43,9 @@
     name: "{{ nginx_user }}"
     group: "{{ nginx_user_group }}"
 
-- name: SystemD temporary path creation
+- name: SystemD temporary path creation. SAFE_TO_FAIL=Debian might complain about flag setting on active system
   become: true
+  ignore_errors: yes
   ansible.builtin.command:
     cmd: systemd-tmpfiles --create
 

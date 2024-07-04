@@ -1,7 +1,7 @@
 postgresql_arch_packages:
   - postgresql
-postgresql_arch_version: 15
-postgresql_arch_root_path: /var/lib/postgres
+postgresql_arch_version: 16
+postgresql_arch_root_path: /var/lib/postgres/data
 postgresql_arch_config_path: "{{ postgresql_arch_root_path }}"
 
 postgresql_debian_packages:

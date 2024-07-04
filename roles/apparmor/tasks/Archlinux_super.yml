@@ -1,0 +1,50 @@
+---
+- name: super | Install AppArmor packages
+  become: true
+  community.general.pacman:
+    name: "{{ apparmor_arch_packages }}"
+
+- name: super | Check if Grub kernel module defined. SAFE_TO_FAIL=If module not yet defined, will fail
+  become: true
+  shell: grep GRUB_CMDLINE_LINUX_DEFAULT /etc/default/grub | grep -c "audit=1 lsm=landlock,lockdown,yama,apparmor,bpf"
+  register: grub_apparmor_defined
+  ignore_errors: true
+
+- name: super | Write apparmor support to Grub default
+  become: true
+  ansible.builtin.lineinfile:
+    dest: /etc/default/grub
+    regexp: 'GRUB_CMDLINE_LINUX_DEFAULT="(.*)"'
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="\1 audit=1 lsm=landlock,lockdown,yama,apparmor,bpf"'
+    backrefs: yes
+  when: grub_apparmor_defined.stdout == "0"
+
+- name: Print message warning about reboot
+  ansible.builtin.debug:
+    msg: Target system reboot. Playbook will appear to freeze for 20 seconds
+  when: grub_apparmor_defined.stdout == "0"
+
+- name: super | Unconditionally reboot the machine with all defaults
+  become: true
+  ansible.builtin.reboot:
+    msg: "Reboot initiated by Ansible"
+    connect_timeout: 5
+    reboot_timeout: 600
+    pre_reboot_delay: 0
+    post_reboot_delay: 20
+    test_command: whoami
+  when: grub_apparmor_defined.stdout == "0"
+
+- name: super | Enable Audit framework for userspace
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: auditd
+
+- name: super | Enable AppArmor service
+  become: true
+  ansible.builtin.systemd:
+    enabled: true
+    state: started
+    name: apparmor

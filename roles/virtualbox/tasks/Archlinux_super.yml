@@ -5,10 +5,13 @@
     name: "{{ arch_linux_virtualbox_packages }}"
 
 - name: packages | Install AUR packages
-  ansible.builtin.import_tasks: tasks/install_aur_packages.yml
-  when: yay_install
-  vars:
-    aur_packages: "{{ arch_linux_virtualbox_aur_packages }}"
+  when:
+    - yay_install
+  kewlfft.aur.aur:
+    name: "{{ arch_linux_virtualbox_aur_packages }}"
+    state: present
+  become: yes
+  become_user: "{{ aur_build_user }}"
 
 - name: virtualbox | Add the user to the vboxusers user group
   become: true

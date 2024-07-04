@@ -3,23 +3,46 @@ desktop_use_intellij: false
 
 desktop_arch_packages:
   - ark
+  - chromium
   - dolphin
   - dolphin-plugins
+  - ffmpegthumbs
   - filelight
   - firefox
+  - gimp
+  - karchive
+  - kate
   - kdialog
+  - keepassxc
   - kompare
+  - konsole
+  - krdc
+  - krename
+  - kwallet
+  - kwalletmanager
   - okular
+  - obsidian
   - sddm
   - sddm-kcm
-  - xorg-server
+  - vlc
+  - xorg
+  - xorg-apps
+  - xorg-drivers
+  - xorg-apps
+  - xorg-fonts
+  - xorg-xinit
+  - yakuake
+  - yamllint
+
 desktop_arch_aur_packages:
   - ttf-meslo-nerd-font-powerlevel10k
   - ttf-ms-fonts
+
 desktop_arch_nvidia_packages:
   - nvidia
   - nvidia-settings
   - nvidia-utils
+
 desktop_arch_font_packages:
   - ttf-caladea
   - ttf-carlito

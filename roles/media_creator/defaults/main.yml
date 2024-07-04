@@ -1,0 +1,7 @@
+---
+
+media_creator_arch_packages:
+  - audacity
+  - cdrtools
+  - ffmpeg
+  - kdenlive

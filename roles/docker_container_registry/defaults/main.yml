@@ -10,5 +10,5 @@ docker_container_registry_auth: "{{ docker_container_registry_path }}/auth"
 # Secrets - The following are included for reference only but, 100% should be
 #           included in a Vault
 #
-docker_container_registry_user: thelab
+docker_container_registry_user: personal-infra
 docker_container_registry_user_password: development

@@ -1,7 +1,12 @@
 ---
 docker_arch_packages:
   - docker
+  - docker-buildx
   - docker-compose
+
+docker_arch_aur_packages:
+  - docker-credential-pass
+  - docker-credential-secretservice
 
 docker_debian_packages:
   - docker-ce

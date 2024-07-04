@@ -5,13 +5,13 @@
     domain: "{{ forgejo_domain | default(forgejo_reference + '.' + fqcdn) }}"
 
 - name: Set DB Host when specifically defined
-  when: forgejo_db_host
+  when: forgejo_db_host is defined
   set_fact:
     db_host: "{{ hostvars[forgejo_db_host].inventory_hostname_short }}"
     db_host_fqcdn: "{{ hostvars[forgejo_db_host].fqcdn }}"
     db_port: "{{ hostvars[forgejo_db_host].postgresql_port }}"
 
-- name: Move the binary
+- name: Install package
   become: true
   community.general.pacman:
     name: forgejo
